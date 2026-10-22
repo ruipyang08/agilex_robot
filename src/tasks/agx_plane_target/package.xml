@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>agx_plane_target</name>
+  <version>0.0.1</version>
+  <description>
+    Interactive red-dot target on the provisional safety plane: drag the dot
+    anywhere on the plane (clamped to the yellow safety rectangle), click the
+    GO button to send the gripper straight down onto the dot via MoveIt, and
+    click the STOP button to cancel the current execution. The grasp service
+    adds the closing half of a pick (move onto the dot, then close the gripper
+    to a live-tunable target and report the reading it stopped at). The put
+    service (PutPoint.srv, int32 point 1..6) places a held object on one of the
+    six taught put points (measurements.md M6, link_base_lift0): move above the
+    point, straight-line descent, open the gripper, straight-line lift, back to
+    the SRDF initial pose;     the six points are drawn as red spheres on
+    /plane_target/put_points and the terminal CLI is scripts/put. The pick
+    service (PickPoint.srv, same point numbers) is the reverse timing:
+    from initial to the safety height above the point, straight descent,
+    close to 200, straight lift, back to initial; CLI is scripts/pick.
+    Task-layer node, depends on MoveIt from moveit_config; nothing in
+    core/start may depend on this package.
+  </description>
+  <maintainer email="bunker@todo.todo">bunker</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>interactive_markers</depend>
+  <depend>moveit_commander</depend>
+  <depend>tf</depend>
+  <depend>std_srvs</depend>
+  <depend>std_msgs</depend>
+  <depend>dh_gripper_msgs</depend>
+
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+</package>

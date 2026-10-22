@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="map_file" default="$(find agilexpro)/maps/map.yaml" />
+  <arg name="show_rviz" default="true" />
+
+  <include file="$(find agilexpro)/launch/navigation_application.launch">
+    <arg name="map_file" value="$(arg map_file)" />
+    <arg name="show_rviz" value="$(arg show_rviz)" />
+  </include>
+  <include file="$(find ranger_base)/launch/ranger_mini_v2.launch">
+  </include>
+</launch>

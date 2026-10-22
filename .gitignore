@@ -1,0 +1,18 @@
+# 构建产物与运行时生成物（不入库，随 catkin_make 重新生成）
+build/
+devel/
+logs/
+.catkin_workspace
+catkin_make.cache
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 网格包过大（104 MB 单文件超 GitHub 100 MB 上限），不入库
+src/moveit_config/ranger_mini/

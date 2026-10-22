@@ -1,0 +1,345 @@
+﻿#include "mark_listenner/mark_listenner.hpp"
+using namespace agxcore;
+
+MarkListenner::MarkListenner(ros::NodeHandle *nh) : nh_(nh) {}
+
+void MarkListenner::Setup()
+{
+  mark = nh_->subscribe<ar_track_alvar_msgs::AlvarMarkers>("/cam1/ar_pose_marker", 5, &MarkListenner::Callback, this);
+  place_mark = nh_->subscribe<ar_track_alvar_msgs::AlvarMarkers>("/cam2/ar_pose_marker", 5, &MarkListenner::Callback, this);
+
+  //pub = nh_->advertise<geometry_msgs::Pose>("pick_point",50);
+  service = nh_->advertiseService("pick_point", &MarkListenner::MarkCallback, this);
+  yolo_sub_ = nh_->subscribe<geometry_msgs::PoseStamped>("yolo3_pose", 5, &MarkListenner::yolo_callback, this);
+  mark2cam_ = nh_->subscribe<geometry_msgs::PoseStamped>("mark2cam", 5, &MarkListenner::yolo_callback, this);
+  initial(temp);
+  initial(real_position);
+  ClearMarkState();
+}
+
+void MarkListenner::yolo_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
+  int type = GetPickItemType(msg->header.frame_id);
+  temp[type].header.seq++;
+  temp[type].pose.position.x += msg->pose.position.x;
+  temp[type].pose.position.y += msg->pose.position.y;
+  temp[type].pose.position.z += msg->pose.position.z;
+  if (temp[type].header.seq == FILLTER_N)
+  {
+    temp[type].header.seq = 0;
+    real_position[APPLE].position.x = temp[type].pose.position.x / FILLTER_N;
+    real_position[APPLE].position.y = temp[type].pose.position.y / FILLTER_N;
+    real_position[APPLE].position.z = temp[type].pose.position.z / FILLTER_N;
+
+    temp[type].pose.position.x = 0;
+    temp[type].pose.position.y = 0;
+    temp[type].pose.position.z = 0;
+  }
+}
+
+int MarkListenner::GetPickItemType(std::string name)
+{
+  if (std::strcmp(name.c_str(), "apple"))
+  {
+    return APPLE;
+  }
+  if (std::strcmp(name.c_str(), "apple_to_cam"))
+  {
+    return APPLE_CAM;
+  }
+}
+
+bool MarkListenner::MarkCallback(agx_pick_msg::AgxPickSrv::Request &req, agx_pick_msg::AgxPickSrv::Response &res)
+{
+  int item_num = req.item;
+  ROS_INFO("item_num:%d", item_num);
+
+  //判断获取的标签是否不在当前的摄像头可视范围之内
+  if (is_mark_empty[item_num])
+  {
+    return false;
+  }
+
+  //根据标签id和夹爪姿势返回坐标
+  switch (item_num)
+  {
+  case OBJECT:
+  {
+    if (req.handpose == PRE)
+    {
+      if (getTransform("link_base", "prepose1_frame", res))
+      {
+        return true;
+      }
+    }
+    else
+    {
+      if (getTransform("link_base", "handpose1_frame", res))
+      {
+        return true;
+      }
+    }
+    // if (req.Prepose == FRONT && req.handpose == PRE)
+    // {
+    //   ROS_INFO("FRONT,PRE");
+    //   res.position.y = real_position[item_num].position.y + PRE_OFFSET_Y;
+    //   res.position.z = real_position[item_num].position.z - PRE_OFFSET_Z;
+
+    //   ROS_INFO("%f", real_position[item_num].position.x);
+    //   ROS_INFO("%f", real_position[item_num].position.y);
+    //   ROS_INFO("%f", real_position[item_num].position.z);
+    // }
+    // else if (req.Prepose == UPSIDE && req.handpose == PRE)
+    // {
+    //   ROS_INFO("UPSIDE,PRE");
+    //   res.position.z = real_position[item_num].position.z + PRE_OFFSET_Z;
+    //   res.position.y = real_position[item_num].position.y + PRE_OFFSET_Y;
+    // }
+    // else
+    // {
+    //   ROS_INFO("else");
+    //   res.position.y = real_position[item_num].position.y + GRIPPER_LENGTH;
+    //   res.position.z = real_position[item_num].position.z;
+    // }
+  }
+  break;
+  case PICK:
+  {
+    res.position.y = real_position[item_num].position.y;
+    res.position.z = real_position[item_num].position.z;
+  }
+    return true;
+  case PLACE:
+  {
+    if (req.handpose == PRE)
+    {
+      if (getTransform("link_base", "prepose2_frame", res))
+      {
+        return true;
+      }
+    }
+    else
+    {
+      if (getTransform("link_base", "handpose2_frame", res))
+      {
+        return true;
+      }
+    }
+    // if (req.Prepose == FRONT && req.handpose == PRE)
+    // {
+    //   ROS_INFO("FRONT,PRE");
+    //   res.position.y = real_position[item_num].position.y + PLACE_PRE_OFFSET_Y;
+    //   res.position.z = real_position[item_num].position.z - PLACE_PRE_OFFSET_Z;
+
+    //   ROS_INFO("%f", real_position[item_num].position.x);
+    //   ROS_INFO("%f", real_position[item_num].position.y);
+    //   ROS_INFO("%f", real_position[item_num].position.z);
+    // }
+    // else if (req.Prepose == UPSIDE && req.handpose == PRE)
+    // {
+    //   ROS_INFO("UPSIDE,PRE");
+    //   res.position.z = real_position[item_num].position.z + PRE_OFFSET_Z;
+    //   res.position.y = real_position[item_num].position.y + PRE_OFFSET_Y;
+    // }
+    // else
+    // {
+    //   ROS_INFO("else");
+    //   res.position.y = real_position[item_num].position.y + GRIPPER_LENGTH;
+    //   res.position.z = real_position[item_num].position.z + PLACE_PRE_OFFSET_Z;
+    // }
+  }
+  break;
+  case APPLE:
+  {
+    if (req.Prepose == FRONT && req.handpose == PRE)
+      res.position.x = real_position[item_num].position.x - PRE_OFFSET_Y;
+    else
+
+      res.position.y = real_position[item_num].position.y;
+
+    if (req.Prepose == UPSIDE && req.handpose == PRE)
+      res.position.z = real_position[item_num].position.z + PRE_OFFSET_Z;
+    else
+      res.position.z = real_position[item_num].position.z;
+  }
+  break;
+  case APPLE_CAM:
+  {
+    res.position.y = real_position[item_num].position.y;
+    res.position.z = real_position[item_num].position.z;
+  }
+  break;
+  default:
+  {
+    ROS_INFO("use no valid num");
+    return false;
+  };
+  }
+
+  res.position.x = real_position[item_num].position.x;
+
+  Clear(&real_position[item_num]);
+  tf::Quaternion q;
+  if (req.Prepose == FRONT)
+    q.setRPY(1.57, 0, 0);
+  else
+    q.setRPY(3.14, 0, 0);
+  res.orientation.x = q.getX();
+  res.orientation.y = q.getY();
+  res.orientation.z = q.getZ();
+  res.orientation.w = q.getW();
+  return true;
+}
+
+void MarkListenner::Callback(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr &msg)
+{
+  ClearMarkState();
+  if (msg->markers.size() > 0)
+  {
+    GetPickupPoint(msg);
+  }
+  else
+  {
+    initial(real_position);
+    ROS_INFO("no date!");
+  }
+}
+
+void MarkListenner::GetPickupPoint(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr &msg)
+{
+  for (int i = 0; i < msg->markers.size(); i++)
+  {
+    int id_num = msg->markers[i].id;
+    //ROS_INFO("%d(%f,%f,%f)",msg->markers[i].id,msg->markers[i].pose.pose.position.x,msg->markers[i].pose.pose.position.y,msg->markers[i].pose.pose.position.z);
+    //only save dates of marks which id is 0,1,2
+    switch (id_num)
+    {
+    case OBJECT:
+    case PICK:
+    case PLACE:
+    {
+      temp[id_num].pose.position.x += msg->markers[i].pose.pose.position.x;
+      temp[id_num].pose.position.y += msg->markers[i].pose.pose.position.y;
+      temp[id_num].pose.position.z += msg->markers[i].pose.pose.position.z;
+      int count = temp[id_num].header.seq++;
+      if (count == 2)
+      {
+        real_position[id_num].position.x = temp[id_num].pose.position.x / 3;
+        real_position[id_num].position.y = temp[id_num].pose.position.y / 3;
+        real_position[id_num].position.z = temp[id_num].pose.position.z / 3;
+        ROS_INFO("%d:%f,%f,%f", id_num, real_position[id_num].position.x, real_position[id_num].position.y, real_position[id_num].position.z);
+        Clear(&temp[id_num]);
+      }
+    }
+    break;
+    default:
+    {
+      ROS_INFO("Invalid number ");
+    }
+    break;
+    }
+    is_mark_empty[id_num] = false;
+  }
+}
+
+//void MarkListenner::PubPickupPoint(geometry_msgs::Pose &msg)
+//{
+//  tf::Quaternion q;
+//  q.setRPY(HOME_X,HOME_Y,HOME_Z);
+//  msg.orientation.x = q.x();
+//  msg.orientation.y = q.y();
+//  msg.orientation.z = q.z();
+//  msg.orientation.w = q.w();
+//  point_msg.position.x = msg.position.x;
+//  point_msg.position.y = msg.position.y;
+//  point_msg.position.z = msg.position.z;
+//  point_msg.orientation.x = msg.orientation.x;
+//  point_msg.orientation.y = msg.orientation.y;
+//  point_msg.orientation.z = msg.orientation.z;
+//  point_msg.orientation.w = msg.orientation.w;
+
+//  //pub.publish(msg);
+//}
+
+void MarkListenner::initial(geometry_msgs::PoseStamped msg[])
+{
+  for (int i = 0; i < 5; i++)
+  {
+    Clear(&msg[i]);
+  }
+}
+
+void MarkListenner::initial(geometry_msgs::Pose msg[])
+{
+  for (int i = 0; i < 5; i++)
+  {
+    Clear(&msg[i]);
+  }
+}
+
+void MarkListenner::SetPose(geometry_msgs::Pose msg)
+{
+  tf::Quaternion q;
+  q.setRPY(1.57, 0, 0);
+  msg.orientation.x = q.getX();
+  msg.orientation.y = q.getY();
+  msg.orientation.z = q.getZ();
+  msg.orientation.w = q.getW();
+}
+
+void MarkListenner::Clear(geometry_msgs::PoseStamped *msg)
+{
+
+  msg->pose.position.x = 0;
+  msg->pose.position.y = 0;
+  msg->pose.position.z = 0;
+  msg->header.seq = 0;
+}
+
+void MarkListenner::Clear(geometry_msgs::Pose *msg)
+{
+  msg->position.x = 0;
+  msg->position.y = 0;
+  msg->position.z = 0;
+}
+
+void MarkListenner::ClearMarkState()
+{
+  for (int i = 0; i < sizeof(Item); i++)
+  {
+    is_mark_empty[i] = true;
+  }
+}
+
+bool MarkListenner::getTransform(const std::string &parentFrame, const std::string &childFrame, agx_pick_msg::AgxPickSrv::Response &res)
+{
+  std::string errMsg;
+
+  if (!tfListener_.waitForTransform(parentFrame, childFrame, ros::Time::now(), ros::Duration(0.5), ros::Duration(0.01),
+                                    &errMsg))
+  {
+    ROS_ERROR_STREAM("Unable to get pose from TF: " << errMsg);
+    return false;
+  }
+  else
+  {
+    tf::StampedTransform transform;
+    try
+    {
+      tfListener_.lookupTransform(parentFrame, childFrame, ros::Time::now(), transform);
+      res.position.x = transform.getOrigin().x();
+      res.position.y = transform.getOrigin().y();
+      res.position.z = transform.getOrigin().z();
+      res.orientation.x = transform.getRotation().getX();
+      res.orientation.y = transform.getRotation().getY();
+      res.orientation.z = transform.getRotation().getZ();
+      res.orientation.w = transform.getRotation().getW();
+    }
+    catch (const tf::TransformException &e)
+    {
+      ROS_ERROR_STREAM("Error in lookupTransform of " << childFrame << " in " << parentFrame);
+      return false;
+    }
+  }
+  return true;
+}

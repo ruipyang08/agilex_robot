@@ -1,0 +1,9 @@
+# Put point number, 1..6, in the table order of measurements.md M6
+# (1 = centre, 2 = green axis +75 mm, ... 6 = green axis -75 mm and red axis -75 mm).
+# The number is part of the request on purpose: one call selects the point,
+# so nothing can slip between "choose the point" and "start the motion".
+int32 point
+---
+# success=false: invalid point number or another motion/action is running.
+bool success
+string message

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <test
+    test-name="tube_target_provider_rostest"
+    pkg="agx_xarm_pick"
+    type="tube_target_provider_rostest"
+    time-limit="20"
+  >
+    <param name="configuration_fixture" value="$(find agx_xarm_pick)/test/fixtures/tube_task_config/taskA.yaml" />
+  </test>
+</launch>

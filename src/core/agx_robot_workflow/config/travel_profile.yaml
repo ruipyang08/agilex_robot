@@ -1,0 +1,8 @@
+# No posture, path, loaded envelope or physical execution mode is qualified here.
+# Enable a separate measured profile only with its qualification evidence.
+schema_version: 1
+profile_id: default_transport_unqualified
+simulation: {enabled: false, evidence_id: unqualified}
+hardware: {enabled: false, evidence_id: unqualified}
+robot: null
+parameters: null

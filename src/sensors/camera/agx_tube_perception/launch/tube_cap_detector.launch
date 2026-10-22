@@ -1,0 +1,35 @@
+<launch>
+  <arg
+    name="profile_config"
+    default="$(find agx_xarm_pick)/config/test_tube_fixture_profiles.yaml"
+  />
+  <arg
+    name="config"
+    default="$(find agx_xarm_pick)/config/test_tube_grasp.yaml"
+  />
+  <arg name="load_shared_config" default="true"/>
+  <arg name="color_topic" default="/cam1/color/image_raw"/>
+  <arg name="camera_info_topic" default="/cam1/color/camera_info"/>
+
+  <!-- Load the reviewed profile registry before its selected mission context. -->
+  <rosparam
+    if="$(arg load_shared_config)"
+    command="load"
+    file="$(arg profile_config)"
+  />
+  <rosparam
+    if="$(arg load_shared_config)"
+    command="load"
+    file="$(arg config)"
+  />
+
+  <node
+    pkg="agx_tube_perception"
+    type="tube_cap_detector_node.py"
+    name="tube_cap_detector"
+    output="screen"
+  >
+    <remap from="color" to="$(arg color_topic)"/>
+    <remap from="camera_info" to="$(arg camera_info_topic)"/>
+  </node>
+</launch>

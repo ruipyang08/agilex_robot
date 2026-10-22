@@ -1,0 +1,8 @@
+# Pick point number, 1..6, same table as the put points (measurements.md M6).
+# The number is part of the request on purpose: one call selects the point,
+# so nothing can slip between "choose the point" and "start the motion".
+int32 point
+---
+# success=false: invalid point number or another motion/action is running.
+bool success
+string message

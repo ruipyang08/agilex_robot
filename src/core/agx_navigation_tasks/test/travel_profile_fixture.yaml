@@ -1,0 +1,62 @@
+# Synthetic unit-test data only. This does not qualify a robot or simulator.
+schema_version: 1
+profile_id: synthetic_test_only
+simulation: {enabled: true, evidence_id: synthetic_unit_test}
+hardware: {enabled: false, evidence_id: unqualified}
+robot:
+  arm_group: synthetic_arm
+  arm_joint_state_topic: /test/joints
+  gripper_state_topic: /test/gripper
+  lift_service: /test/lift_command
+  lift_state_topic: /test/lift_state
+  observer:
+    gripper_max_age_s: 1.0
+    arm_max_age_s: 1.0
+    lift_max_age_s: 1.0
+    fully_open_command: 1000.0
+    close_command: 0.0
+    command_tolerance: 5.0
+    stopped_velocity_rad_s: 0.001
+    stop_settle_s: 0.2
+    stopped_arm_range_rad: 0.002
+    stopped_lift_range_m: 0.001
+parameters:
+  arm:
+    - {name: joint1, position_rad: 0.5, tolerance_rad: 0.01, stopped_velocity_rad_s: 0.001}
+    - {name: joint2, position_rad: -0.5, tolerance_rad: 0.01, stopped_velocity_rad_s: 0.001}
+  lift: {position_m: 0.4, tolerance_m: 0.001, stopped_velocity_mps: 0.001}
+  motion: {arm_velocity_rad_s: 0.1, arm_acceleration_rad_s2: 0.1, lift_velocity_mps: 0.01}
+  held_load:
+    container_profile_id: test-tube
+    max_mass_kg: 0.1
+    max_radius_m: 0.01
+    max_length_m: 0.1
+    attachment_link: test_gripper_base
+    center_xyz_m: [0.0, 0.0, 0.1]
+    orientation_xyzw: [0.0, 0.0, 0.0, 1.0]
+    touch_links: [test_left_finger, test_right_finger]
+  base:
+    id: synthetic_shared_envelope
+    footprint: [{x_m: -0.5, y_m: -0.5}, {x_m: 0.5, y_m: -0.5}, {x_m: 0.5, y_m: 0.5}, {x_m: -0.5, y_m: 0.5}]
+    linear_velocity_mps: 0.1
+    angular_velocity_rad_s: 0.1
+    linear_acceleration_mps2: 0.1
+    angular_acceleration_rad_s2: 0.1
+  timing: {source_max_age_s: 1.0, receipt_max_age_s: 1.0, settle_s: 0.2, preparation_timeout_s: 5.0}
+  starts:
+    - id: default
+      path_id: synthetic_default_path
+      arm_positions_rad: {joint1: 0.5, joint2: -0.5}
+      arm_tolerances_rad: {joint1: 0.01, joint2: 0.01}
+      lift_position_m: 0.4
+      lift_tolerance_m: 0.001
+      empty_allowed: true
+      single_held_allowed: true
+    - id: home
+      path_id: synthetic_home_path
+      arm_positions_rad: {joint1: 0.0, joint2: 0.0}
+      arm_tolerances_rad: {joint1: 0.01, joint2: 0.01}
+      lift_position_m: 0.0
+      lift_tolerance_m: 0.001
+      empty_allowed: true
+      single_held_allowed: false

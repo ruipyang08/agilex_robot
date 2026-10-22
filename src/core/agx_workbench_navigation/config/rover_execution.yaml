@@ -1,0 +1,14 @@
+# Restart the ROS1 application after editing. Effective phase limit = existing
+# reference limit * global scale * selected task coefficient. A task override
+# replaces default_coefficient. Values must be finite numbers in (0, 1].
+# These settings cannot raise the independent authority/hardware ceilings.
+# Commissioned minimum speeds are fixed. A maximum scaled below its minimum
+# is rejected at startup; timeouts are not automatically lengthened.
+velocity_scale: 1.0
+acceleration_scale: 1.0
+default_coefficient: 1.0
+task_coefficients:
+  coarse_navigation: 1.0
+  visual_docking: 1.0
+  final_approach: 1.0
+  rollback: 1.0

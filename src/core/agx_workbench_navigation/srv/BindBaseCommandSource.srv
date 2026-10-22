@@ -1,0 +1,10 @@
+string session_id
+string grant_id
+string source_goal_id
+geometry_msgs/PoseStamped expected_goal
+string invocation_id
+string route_id
+float64 task_deadline_s
+---
+bool accepted
+string reason

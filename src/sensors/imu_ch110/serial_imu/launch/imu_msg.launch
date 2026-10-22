@@ -1,0 +1,5 @@
+<launch>
+	<node pkg="serial_imu" name="HI226" type="serial_imu" >
+		<remap from="/imu/data_raw" to="/imu/data"/>
+	</node>
+</launch>

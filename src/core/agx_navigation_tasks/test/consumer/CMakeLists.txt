@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.10)
+project(agx_navigation_tasks_consumer)
+set(CMAKE_CXX_STANDARD 17)
+find_package(catkin REQUIRED COMPONENTS agx_navigation_tasks)
+add_executable(consumer main.cpp)
+target_include_directories(consumer PRIVATE ${catkin_INCLUDE_DIRS})
+target_link_libraries(consumer ${catkin_LIBRARIES})

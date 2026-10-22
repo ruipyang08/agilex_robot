@@ -1,0 +1,12 @@
+<launch>
+  <arg name="travel_profile" default="$(find agx_robot_workflow)/config/travel_profile.yaml" />
+  <arg name="execution_mode" default="hardware" />
+  <!-- Installation selection is frozen by each workflow before dispatch. The
+       shipped profile is disabled; selecting a path does not qualify it.
+       Keep the established ROS parameter/topic namespace for current clients. -->
+  <param name="/workbench_workflow/travel_profile" value="$(arg travel_profile)" />
+  <param name="/workbench_workflow/execution_mode" value="$(arg execution_mode)" />
+  <!-- Application supervision starts here; the YAML mission is an explicit second command. -->
+  <node pkg="agx_robot_workflow" type="workflow_watchdog.py"
+        name="workbench_workflow_watchdog" output="screen" required="true" />
+</launch>

@@ -1,0 +1,7 @@
+int32 moterID
+
+int32 pose
+
+int32 force
+---
+bool result

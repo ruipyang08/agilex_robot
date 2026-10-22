@@ -1,0 +1,79 @@
+# Synthetic producer observations for isolated ROS test graph only.
+local_planner:
+  footprint: &id001
+  - - -0.5
+    - -0.5
+  - - 0.5
+    - -0.5
+  - - 0.5
+    - 0.5
+  - - -0.5
+    - 0.5
+  collision_footprint: *id001
+  max_linear_speed_mps: 0.05
+  max_spin_speed_radps: 0.05
+  min_turn_radius_m: 1.0
+  max_linear_accel_mps2: 0.04
+  max_linear_decel_mps2: 0.05
+  max_lateral_accel_mps2: 0.02
+  max_angular_accel_radps2: 0.05
+  navigation_progress:
+    policy: operation_pose_displacement
+    clock: ros_source
+    timeout_s: 45.0
+    translation_m: 0.2
+    rotation_rad: 0.1
+    parent_frame: odom
+    body_frame: base_link
+    stock_oscillation_timeout_requested_s: 0.0
+  rover_execution: &id002
+    velocity_scale: 1.0
+    acceleration_scale: 1.0
+    default_coefficient: 1.0
+    task_coefficients: {}
+global_planner:
+  footprint: *id001
+base_arbiter:
+  odometry_receipt_s: 0.25
+  odometry_header_s: 0.35
+  maximum_header_future_skew_s: 0.05
+  final_command_policy: measured_progress_contraction
+  normal_slew_clock: producer_source_time
+  max_linear_x_mps: 0.06
+  max_linear_y_mps: 0.06
+  max_angular_z_radps: 0.08
+  max_linear_speed_lead_mps: 0.002
+  max_angular_speed_lead_radps: 0.004
+  min_turn_radius_m: 0.4764
+  pose_feedback:
+    parent_frame: odom
+    child_frame: rslidar
+    command_frame: base_link
+    min_interval_s: 0.001
+    max_interval_s: 0.25
+    max_translation_step_m: 0.1
+    max_rotation_step_rad: 0.2
+    max_linear_speed_mps: 2.0
+    max_angular_speed_radps: 3.0
+    quaternion_norm_tolerance: 0.00001
+    extrinsic_translation_tolerance_m: 0.000001
+    extrinsic_rotation_tolerance_rad: 0.000001
+docking:
+  max_yaw_speed_radps: 0.05
+  max_lateral_speed_mps: 0.03
+  max_visual_forward_speed_mps: 0.03
+  max_blind_speed_mps: 0.05
+  max_rollback_speed_mps: 0.04
+  max_visual_linear_acceleration_mps2: 0.02
+  max_visual_angular_acceleration_radps2: 0.05
+  max_blind_acceleration_mps2: 0.05
+  max_rollback_acceleration_mps2: 0.04
+  rover_execution: *id002
+lidar:
+  front_x_m: 0.5
+  rear_x_m: -0.5
+  left_y_m: 0.5
+  right_y_m: -0.5
+  min_obstacle_z_m: -0.2
+  max_obstacle_z_m: 2.0
+  self_padding_m: 0.03

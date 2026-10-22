@@ -1,0 +1,7 @@
+# Targets require measured registration in the active map.
+schema_version: 2
+workflow_id: two_station_empty_round_trip
+tasks:
+  - {id: approach_a, type: navigate, target: wb-100}
+  - {id: travel_b, type: navigate, target: wb-101}
+  - {id: return_a, type: navigate, target: wb-100}

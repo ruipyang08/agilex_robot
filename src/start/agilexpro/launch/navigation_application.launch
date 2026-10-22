@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="map_file" />
+  <arg name="show_rviz" default="true" />
+  <arg name="cmd_vel_topic" default="/cmd_vel" />
+  <arg name="authorized_cmd_vel_topic" default="/workbench_nav/cmd_vel/navigation" />
+  <arg name="amcl_tf_broadcast" default="true" />
+  <arg name="planner_frequency_hz" default="5.0" />
+  <arg name="recovery_behavior_enabled" default="true" />
+  <arg name="oscillation_timeout_s" default="20.0" />
+  <arg name="costmap_common_params_file"
+       default="$(find agilexpro)/param/4wd/costmap_common_params.yaml" />
+  <arg name="global_costmap_common_params_file"
+       default="$(arg costmap_common_params_file)" />
+  <arg name="local_costmap_common_params_file"
+       default="$(arg costmap_common_params_file)" />
+  <arg name="base_local_planner_params_file"
+       default="$(find agilexpro)/param/4wd/base_local_planner_params.yaml" />
+  <arg name="base_global_planner_params_file" default="" />
+  <arg name="base_global_planner_plugin"
+       default="global_planner/GlobalPlanner" />
+  <arg name="base_local_planner_plugin"
+       default="dwa_local_planner/DWAPlannerROS" />
+  <!-- Keep the vendor values as defaults. Profiles with a larger footprint
+       can override the plugin parameters after the legacy costmap files load. -->
+  <arg name="global_inflation_radius" default="0.5" />
+  <arg name="global_cost_scaling_factor" default="10.0" />
+  <arg name="local_inflation_radius" default="0.35" />
+  <arg name="local_cost_scaling_factor" default="5.0" />
+  <arg name="local_costmap_width_m" default="2.5" />
+  <arg name="local_costmap_height_m" default="2.5" />
+
+  <node name="map_server"
+        pkg="map_server"
+        type="map_server"
+        args="$(arg map_file)"
+        output="screen">
+    <param name="frame_id" value="map" />
+  </node>
+
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
+    <rosparam file="$(find agilexpro)/param/amcl_params.yaml"
+              command="load" />
+    <param name="tf_broadcast" value="$(arg amcl_tf_broadcast)" />
+  </node>
+
+  <node pkg="move_base"
+        type="move_base"
+        respawn="false"
+        name="move_base"
+        output="screen">
+    <remap from="/cmd_vel" to="$(arg cmd_vel_topic)" />
+    <remap from="/workbench_nav/cmd_vel/navigation" to="$(arg authorized_cmd_vel_topic)" />
+    <rosparam file="$(arg global_costmap_common_params_file)"
+              command="load"
+              ns="global_costmap" />
+    <rosparam file="$(arg local_costmap_common_params_file)"
+              command="load"
+              ns="local_costmap" />
+    <rosparam file="$(find agilexpro)/param/4wd/local_costmap_params.yaml"
+              command="load" />
+    <rosparam file="$(find agilexpro)/param/4wd/global_costmap_params.yaml"
+              command="load" />
+    <rosparam file="$(arg base_local_planner_params_file)"
+              command="load" />
+    <rosparam file="$(find agilexpro)/param/4wd/move_base_params.yaml"
+              command="load" />
+    <rosparam if="$(eval arg('base_global_planner_params_file') != '')"
+              file="$(arg base_global_planner_params_file)"
+              command="load" />
+    <param name="base_local_planner"
+           value="$(arg base_local_planner_plugin)" />
+    <param name="base_global_planner"
+           value="$(arg base_global_planner_plugin)" />
+    <param name="planner_frequency"
+           value="$(arg planner_frequency_hz)" type="double" />
+    <param name="recovery_behavior_enabled"
+           value="$(arg recovery_behavior_enabled)" type="bool" />
+    <param name="oscillation_timeout"
+           value="$(arg oscillation_timeout_s)" type="double" />
+    <!-- costmap_2d migrates these legacy parent parameters into each
+         inflation plugin during startup. Override both forms so a profile
+         value cannot be replaced by the vendor YAML during that migration. -->
+    <param name="global_costmap/inflation_radius"
+           value="$(arg global_inflation_radius)" type="double" />
+    <param name="global_costmap/cost_scaling_factor"
+           value="$(arg global_cost_scaling_factor)" type="double" />
+    <param name="global_costmap/inflation_layer/inflation_radius"
+           value="$(arg global_inflation_radius)" type="double" />
+    <param name="global_costmap/inflation_layer/cost_scaling_factor"
+           value="$(arg global_cost_scaling_factor)" type="double" />
+    <param name="local_costmap/inflation_radius"
+           value="$(arg local_inflation_radius)" type="double" />
+    <param name="local_costmap/cost_scaling_factor"
+           value="$(arg local_cost_scaling_factor)" type="double" />
+    <param name="local_costmap/inflation_layer/inflation_radius"
+           value="$(arg local_inflation_radius)" type="double" />
+    <param name="local_costmap/inflation_layer/cost_scaling_factor"
+           value="$(arg local_cost_scaling_factor)" type="double" />
+    <!-- Override the vendor rolling-window dimensions after its YAML loads.
+         The defaults preserve hardware behavior; large-footprint profiles
+         need enough room to score a complete in-place rotation trajectory. -->
+    <param name="local_costmap/width"
+           value="$(arg local_costmap_width_m)" type="double" />
+    <param name="local_costmap/height"
+           value="$(arg local_costmap_height_m)" type="double" />
+  </node>
+
+  <node if="$(arg show_rviz)"
+        name="car_rviz"
+        pkg="rviz"
+        type="rviz"
+        args="-d $(find agilexpro)/rviz/slam.rviz" />
+</launch>

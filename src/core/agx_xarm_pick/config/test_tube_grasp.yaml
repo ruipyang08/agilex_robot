@@ -1,0 +1,63 @@
+tube_grasp:
+  active_profile_id: table_grid_3x3_v1
+  target_cap_color: green
+  context:
+    source: configured_demo
+    planning_frame: link_base
+    nominal_fixture_center_xyz_m: [0.151485, 0.000869, 0.100]
+    maximum_translation_error_m: 0.080
+    maximum_yaw_error_deg: 30.0
+    tag_registration_required: false
+  lift:
+    service_name: /lifter_1/LiftingMotorService
+    state_topic: /lifter_1/LiftMotorStatePub
+    arm_base_height_at_zero_lift_above_floor_m: 0.885
+    minimum_position_m: 0.0
+    maximum_position_m: 0.600
+    target_tolerance_m: 0.002
+    state_max_age_sec: 0.25
+    motion_timeout_sec: 60.0
+  perception:
+    required_consistent_frames: 3
+    synchronizer_queue_size: 5
+    max_sync_skew_sec: 0.03
+    detection_timeout_sec: 3.0
+    maximum_frame_age_sec: 0.50
+    max_interframe_spread_m: 0.012
+    workspace_min_xyz_m: [0.09, -0.50, 0.05]
+    workspace_max_xyz_m: [0.70, 0.50, 0.65]
+  transforms:
+    link6_to_grasp_tcp_xyz_m: [0.0, 0.0, 0.18]
+    link6_to_grasp_tcp_quaternion_xyzw: [0.0, 0.0, 0.0, 1.0]
+    link6_to_camera_xyz_m: [0.064976110206, -0.029999980976, 0.060]
+    link6_to_camera_quaternion_xyzw:
+      [-0.000281768143, -0.000281319741, 0.706543412963, 0.707669588908]
+  motion:
+    # The capped tube is only 18 g. Simulation trials showed 20% could not
+    # establish bilateral contact, while 50% could eject the cap before the
+    # arm moved. Thirty percent retained the tube through the full extraction.
+    gripper_force: 30.0
+    # Native vendor speed units (1–100); force is configured separately.
+    gripper_speeds:
+      preclose: 30.0
+      final_close: 20.0
+      recovery: 10.0
+    gripper_command_tolerance: 20.0
+    gripper_state_max_age_sec: 0.25
+    robot_state_max_age_sec: 0.25
+    planning_timeout_sec: 10.0
+    gripper_timeout_sec: 15.0
+    hold_duration_sec: 1.0
+    cartesian_step_m: 0.002
+    arm_speed:
+      default_coefficient: 0.60
+      phase1_preparation: 1.00
+      phase2_preparation: 1.00
+      # Preserve qualified perception/contact/recovery motion speeds (0.08 / 0.20).
+      search: 0.40
+      visual_alignment: 0.40
+      pregrasp_adjustment: 0.40
+      insertion: 0.40
+      extraction: 0.60
+      return_with_tube: 0.60
+      recovery: 0.40

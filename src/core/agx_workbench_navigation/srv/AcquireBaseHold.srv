@@ -1,0 +1,9 @@
+string run_id
+string operation_id
+string reason
+---
+bool accepted
+bool stopped_confirmed
+string session_id
+uint64 hold_epoch
+string reason

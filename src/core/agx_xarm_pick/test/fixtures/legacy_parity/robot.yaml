@@ -1,0 +1,65 @@
+# Synthetic test input only; not a physical calibration.
+schema_version: 1
+kind: robot_profile
+id: xarm6_ag95
+planning_frame: link_base
+color_frame: cam1_color_optical_frame
+interfaces:
+  detector_service: /detect_tube_cap
+  joint_state_topic: /joint_states
+  gripper_command_topic: /gripper/ctrl
+  gripper_state_topic: /gripper/states
+lift:
+  service_name: /lifter_1/LiftingMotorService
+  state_topic: /lifter_1/LiftMotorStatePub
+  arm_base_height_at_zero_lift_above_floor_m: 0.885
+  minimum_position_m: 0.0
+  maximum_position_m: 0.6
+  target_tolerance_m: 0.002
+  state_max_age_sec: 0.25
+  motion_timeout_sec: 60.0
+  maximum_speed_request_m_s: 0.01
+transforms:
+  link6_to_grasp_tcp_xyz_m:
+  - 0.0
+  - 0.0
+  - 0.18
+  link6_to_grasp_tcp_quaternion_xyzw:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  link6_to_camera_xyz_m:
+  - 0.064976110206
+  - -0.029999980976
+  - 0.06
+  link6_to_camera_quaternion_xyzw:
+  - -0.000281768143
+  - -0.000281319741
+  - 0.706543412963
+  - 0.707669588908
+gripper:
+  fully_open_command: 1000.0
+  close_command: 0.0
+  insertion_radial_clearance_m: 0.002
+  finger_thickness_m: 0.008
+  finger_width_m: 0.012
+  tube_clearance_margin_m: 0.003
+  command_gap_samples:
+  - - 0.0
+    - 0.0
+  - - 500.0
+    - 0.05
+  - - 1000.0
+    - 0.1
+  gripper_force: 30.0
+  gripper_speeds:
+    preclose: 30.0
+    final_close: 20.0
+    recovery: 10.0
+  gripper_command_tolerance: 20.0
+  gripper_state_max_age_sec: 0.25
+robot_state_max_age_sec: 0.25
+arm_execution:
+  velocity_scale: 0.2
+  acceleration_scale: 0.5

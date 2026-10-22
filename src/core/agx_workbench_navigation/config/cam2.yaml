@@ -1,0 +1,20 @@
+schema_version: 1
+camera_name: cam2
+model: Intel RealSense D435
+serial_no: "348522075124"
+firmware_observed: "5.15.1.55"
+profile: {width: 640, height: 480, fps: 30}
+topics:
+  color_image: /cam2/color/image_raw
+  color_info: /cam2/color/camera_info
+  markers: /cam2/ar_pose_marker
+frames:
+  link: cam2_link
+  color: cam2_color_frame
+  color_optical: cam2_color_optical_frame
+mount:
+  parent_frame: base_link
+  xyz_m: [0.349, 0.0, 0.197]
+  rpy_rad: [0.0, 0.52359878, 0.0]
+  state: vendor_nominal
+  source_sha256: 2a79e71117173e034695fba0729606263da8bce930a999f59923120a586cdf30

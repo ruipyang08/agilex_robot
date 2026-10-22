@@ -1,0 +1,24 @@
+string config_id
+string fixture_instance_id
+string fixture_profile_id
+string projection_sha256
+agx_pick_msg/TubePerceptionConfig perception
+string target_cap_color
+time not_before
+---
+uint8 SUCCESS=0
+uint8 INVALID_REQUEST=1
+uint8 TARGET_ABSENT=2
+uint8 AMBIGUOUS_TARGET=3
+uint8 STALE_FRAME=4
+uint8 PROFILE_MISMATCH=5
+uint8 INCONSISTENT_TARGET=6
+uint8 INVALID_OBSERVATION=7
+uint8 status
+string detail
+agx_pick_msg/VisualTarget2D target
+uint32 target_candidate_count
+string config_id
+string fixture_instance_id
+string fixture_profile_id
+string projection_sha256

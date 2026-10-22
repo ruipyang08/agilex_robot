@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Shared deployable behavior composition. Mode selection belongs upstream. -->
+  <arg name="enable_pick_behavior" default="false" />
+
+  <!-- This behavior can command real or simulated actuators, so it is opt-in. -->
+  <include if="$(arg enable_pick_behavior)"
+           file="$(find agx_xarm_bringup)/launch/agx_xarm_bring.launch" />
+</launch>

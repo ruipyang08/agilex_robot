@@ -1,0 +1,69 @@
+tube_fixture_profiles:
+  table_grid_3x3_v1:
+    task_type: test_tube_pickup
+    target_cap_color: green
+    table:
+      surface_height_above_floor_m: 0.985
+      height_tolerance_m: 0.025
+    tube:
+      body_diameter_m: 0.016
+      body_height_m: 0.080
+      cap_diameter_m: 0.020
+      cap_height_m: 0.014
+      diameter_tolerance_m: 0.004
+      height_tolerance_m: 0.005
+    layout:
+      rows: 3
+      columns: 3
+      center_pitch_m: 0.040
+      rack_height_above_surface_m: 0.0
+      pitch_tolerance_m: 0.004
+      maximum_missing_slots: 3
+      minimum_layout_inliers: 6
+      maximum_lattice_rms_error_m: 0.004
+    perception:
+      color_frame: cam1_color_optical_frame
+      roi_normalized: [0.10, 0.10, 0.95, 0.90]
+      minimum_layout_saturation: 70
+      target_hsv_lower: [80, 80, 50]
+      target_hsv_upper: [96, 255, 255]
+      cap_top_height_band_m: 0.008
+      minimum_cap_circularity: 0.70
+      maximum_cap_axis_ratio: 1.50
+      maximum_target_temporal_spread_px: 3.0
+      maximum_target_center_error_px: 8.0
+      maximum_recentering_iterations: 3
+    gripper:
+      fully_open_command: 1000.0
+      close_command: 0.0
+      insertion_radial_clearance_m: 0.002
+      finger_thickness_m: 0.008
+      finger_width_m: 0.012
+      tube_clearance_margin_m: 0.003
+      command_gap_samples:
+        - [0.0, 0.000]
+        - [500.0, 0.050]
+        - [1000.0, 0.100]
+    motion:
+      preparation_clearance_above_cap_m: 0.120
+      pregrasp_clearance_m: 0.080
+      # With the configured AG95 TCP, 2 mm below the cap-top reference places
+      # the physical pads on the tube body just under the cap rim.  The rim
+      # then provides mechanical retention instead of relying on cap friction.
+      grasp_offset_below_cap_top_m: 0.002
+      lift_clearance_m: 0.015
+      downward_axis_tolerance_deg: 2.0
+    simulation:
+      target_row: 1
+      target_column: 1
+      tube_mass_kg: 0.018
+      table_dimensions_m: [0.90, 0.80, 0.08]
+      table_center_world_xyz_m: [0.80, -0.15, 0.945]
+      target_cap_rgb: [0.10, 0.80, 0.20]
+      non_target_cap_colors:
+        - {name: blue, rgb: [0.10, 0.25, 0.85]}
+        - {name: orange, rgb: [0.85, 0.55, 0.10]}
+        - {name: purple, rgb: [0.55, 0.20, 0.75]}
+      settling_steps: 1000
+      maximum_settling_translation_m: 0.002
+      maximum_settling_tilt_deg: 2.0

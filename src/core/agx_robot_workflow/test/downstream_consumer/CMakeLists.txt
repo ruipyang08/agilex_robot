@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(workflow_downstream_consumer)
+set(CMAKE_CXX_STANDARD 17)
+find_package(catkin REQUIRED COMPONENTS agx_task_workflow agx_robot_task_runtime agx_navigation_tasks agx_tube_tasks)
+add_executable(consumer main.cpp)
+target_include_directories(consumer PRIVATE ${catkin_INCLUDE_DIRS})
+target_link_libraries(consumer ${catkin_LIBRARIES})

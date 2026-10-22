@@ -1,0 +1,33 @@
+schema_version: 1
+front_reference:
+  frame: base_link
+  x_m: null
+  state: unverified
+  source: vendor_cad_pending_physical_verification
+parking_safety_distance_m: 0.0
+max_blind_travel_m: null
+absolute_max_blind_travel_m: 0.75
+handoff:
+  required_samples: 8
+  min_span_s: 0.35
+  max_sample_age_s: 0.25
+  outlier_mad_scale: 3.5
+  outlier_translation_floor_m: 0.0005
+  outlier_yaw_floor_rad: 0.001
+  max_translation_mad_m: 0.010
+  max_yaw_mad_rad: 0.015
+  handoff_settle_dwell_s: 0.50
+  max_lateral_error_m: 0.010
+  max_yaw_error_rad: 0.035
+  max_forward_residual_m: 0.025
+  max_lateral_residual_m: 0.025
+  max_floor_height_residual_m: 0.015
+  max_floor_normal_residual_rad: 0.080
+  max_approach_yaw_residual_rad: 0.040
+blind_motion:
+  max_speed_mps: 0.05
+  max_acceleration_mps2: 0.10
+  position_tolerance_m: 0.015
+  max_cross_track_m: 0.025
+  max_yaw_drift_rad: 0.035
+  stop_dwell_s: 0.50

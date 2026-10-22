@@ -1,0 +1,10 @@
+# Synthetic test input only; not a physical calibration.
+schema_version: 1
+kind: container_profile
+id: tube16
+body_diameter_m: 0.016
+body_height_m: 0.08
+cap_diameter_m: 0.02
+cap_height_m: 0.014
+diameter_tolerance_m: 0.004
+height_tolerance_m: 0.005

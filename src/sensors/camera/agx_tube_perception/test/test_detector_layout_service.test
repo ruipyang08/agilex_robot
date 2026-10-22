@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+  <rosparam
+    command="load"
+    file="$(find agx_xarm_pick)/config/test_tube_fixture_profiles.yaml"
+  />
+  <rosparam
+    command="load"
+    file="$(find agx_xarm_pick)/config/test_tube_grasp.yaml"
+  />
+  <rosparam
+    command="load"
+    file="$(find agx_xarm_pick)/config/test_tube_search.yaml"
+  />
+  <node
+    pkg="agx_tube_perception"
+    type="tube_cap_detector_node.py"
+    name="tube_cap_detector"
+    output="screen"
+  >
+    <remap from="color" to="/test_tube/color"/>
+    <remap from="camera_info" to="/test_tube/camera_info"/>
+  </node>
+  <test
+    test-name="detector_layout_service"
+    pkg="agx_tube_perception"
+    type="test_detector_layout_service.py"
+    time-limit="120"
+  />
+</launch>

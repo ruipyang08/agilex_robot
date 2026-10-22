@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>agx_tube_tasks</name><version>0.1.0</version>
+  <description>Reusable tube task definitions, immutable configuration and verified grasp effects.</description>
+  <maintainer email="devnull@example.com">ranger_arm maintainers</maintainer><license>MIT</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>agx_task_workflow</depend>
+  <depend>agx_robot_task_runtime</depend>
+  <depend>agx_xarm_pick</depend>
+  <depend>yaml-cpp</depend>
+</package>

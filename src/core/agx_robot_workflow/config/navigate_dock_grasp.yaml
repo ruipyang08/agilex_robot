@@ -1,0 +1,11 @@
+# Task order is execution order. Targets resolve through the loaded registry.
+schema_version: 2
+workflow_id: collect_test_tube
+tasks:
+  - id: approach_workbench_1
+    type: navigate
+    target: wb-100
+  - id: collect_green_tube
+    type: grasp_test_tube
+    fixture_profile: table_grid_3x3_v1
+    cap_color: green

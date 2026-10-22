@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Physical-robot entrypoint. Control behavior remains entirely in the
+       deployable ROS1 workspace. -->
+  <arg name="map_file" />
+  <arg name="registry_file" default="" />
+  <arg name="commissioning" default="false" />
+  <arg name="show_rviz" default="true" />
+  <arg name="base_port" default="can0" />
+  <arg name="visual_handoff_x_m" default="2.05" />
+  <arg name="camera_config_file"
+       default="$(find agx_workbench_navigation)/config/cam2.yaml" />
+  <arg name="parking_config_file"
+       default="$(find agx_workbench_navigation)/config/parking.yaml" />
+  <arg name="lidar_config_file"
+       default="$(find agx_workbench_navigation)/config/lidar_safety.yaml" />
+
+  <include file="$(find agx_bringup)/launch/hardware.launch">
+    <arg name="base_port" value="$(arg base_port)" />
+    <!-- Workbench navigation uses RF2O as the sole canonical /odom source.
+         Retain Ranger wheel odometry only as a read-only diagnostic. -->
+    <arg name="base_odom_topic"
+         value="/workbench_nav/diagnostics/ranger_odom" />
+    <arg name="start_base" value="true" />
+    <arg name="start_lidar" value="true" />
+    <arg name="start_lidar_processing" value="false" />
+    <arg name="start_arm" value="false" />
+    <arg name="start_gripper" value="false" />
+    <arg name="enable_pick_behavior" value="false" />
+  </include>
+
+  <include file="$(find agx_xarm_bringup)/launch/open_rover_camera.launch" />
+
+  <include file="$(find agx_workbench_navigation)/launch/workbench_application.launch">
+    <arg name="map_file" value="$(arg map_file)" />
+    <arg name="registry_file" value="$(arg registry_file)" />
+    <arg name="operation_mode" value="hardware" />
+    <arg name="commissioning" value="$(arg commissioning)" />
+    <arg name="visual_handoff_x_m" value="$(arg visual_handoff_x_m)" />
+    <arg name="camera_config_file" value="$(arg camera_config_file)" />
+    <arg name="parking_config_file" value="$(arg parking_config_file)" />
+    <arg name="lidar_config_file" value="$(arg lidar_config_file)" />
+    <arg name="show_rviz" value="$(arg show_rviz)" />
+  </include>
+</launch>

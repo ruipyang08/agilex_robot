@@ -1,0 +1,20 @@
+<launch>
+  <test pkg="agx_workbench_navigation" type="motion_evidence_ros" test-name="motion_evidence_ros" time-limit="30">
+    <rosparam ns="evidence_costmap">
+      global_frame: map
+      robot_base_frame: base_link
+      rolling_window: false
+      track_unknown_space: true
+      update_frequency: 20.0
+      publish_frequency: 0.0
+      transform_tolerance: 0.25
+      robot_radius: 1.10
+      plugins: [{name: static_map, type: 'costmap_2d::StaticLayer'}, {name: obstacles, type: 'costmap_2d::ObstacleLayer'}, {name: inflation, type: 'costmap_2d::InflationLayer'}]
+      static_map: {map_topic: /map, subscribe_to_updates: false}
+      obstacles: {observation_sources: ''}
+      inflation: {inflation_radius: 2.0, cost_scaling_factor: 3.0}
+    </rosparam>
+    <param name="policy_file" value="$(find agx_workbench_navigation)/config/navigation_motion_policy.yaml" />
+    <param name="lidar_file" value="$(find agx_workbench_navigation)/config/lidar_safety.yaml" />
+  </test>
+</launch>

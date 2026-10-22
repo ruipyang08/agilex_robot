@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="rover_execution_ros" pkg="agx_workbench_navigation"
+        type="rover_execution_ros.py" time-limit="60" />
+</launch>

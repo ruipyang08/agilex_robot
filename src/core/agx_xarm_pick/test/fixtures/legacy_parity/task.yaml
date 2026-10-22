@@ -1,0 +1,8 @@
+# Synthetic test input only; not a physical calibration.
+schema_version: 1
+kind: tube_task
+id: legacy_parity
+installation: installation.yaml
+container: tube.yaml
+behavior: behavior.yaml
+robot: robot.yaml

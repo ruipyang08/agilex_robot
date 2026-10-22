@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Dedicated rover-camera detector. Camera driver and base mount TF are
+       intentionally owned elsewhere. -->
+  <arg name="marker_size_cm" default="18.0" />
+  <arg name="image_topic" default="/cam2/color/image_raw" />
+  <arg name="camera_info_topic" default="/cam2/color/camera_info" />
+  <arg name="output_frame" default="cam2_color_optical_frame" />
+  <arg name="marker_topic" default="/cam2/ar_pose_marker" />
+
+  <remap from="/cam2/ar_pose_marker" to="$(arg marker_topic)" />
+
+  <include file="$(find ar_track_alvar)/launch/pr2_indiv_no_kinect.launch">
+    <arg name="marker_size" value="$(arg marker_size_cm)" />
+    <arg name="max_new_marker_error" value="0.08" />
+    <arg name="max_track_error" value="0.2" />
+    <arg name="cam_image_topic" value="$(arg image_topic)" />
+    <arg name="cam_info_topic" value="$(arg camera_info_topic)" />
+    <arg name="output_frame" value="$(arg output_frame)" />
+    <arg name="mark_topic" value="$(arg marker_topic)" />
+    <arg name="visualization_topic" value="/cam2/visualization_marker" />
+    <arg name="publish_tf" value="false" />
+    <!-- The vendored launch appends _ar_track_alvar to this node identity and
+         derives the marker topic from it, yielding /cam2/ar_pose_marker. -->
+    <arg name="node_name" value="cam2" />
+  </include>
+</launch>

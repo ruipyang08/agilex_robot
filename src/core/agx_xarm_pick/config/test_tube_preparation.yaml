@@ -1,0 +1,21 @@
+tube_grasp:
+  lift:
+    maximum_speed_request_mm_s: 10
+  motion:
+    preparation:
+      phase_one:
+        joint_positions_rad:
+          - -2.8479814646964625e-05
+          - -0.8655031056295434
+          - -1.4268700011286828
+          - 9.985777318568821e-06
+          - 2.292373139239332
+          - -2.176791500270438e-05
+        expected_tcp_xyz_m:
+          - 0.099999725
+          - -0.000000067
+          - 0.500000837
+        downward_axis_tolerance_deg: 2.0
+      phase_two:
+        centerline_y_m: 0.0
+        downward_axis_tolerance_deg: 2.0

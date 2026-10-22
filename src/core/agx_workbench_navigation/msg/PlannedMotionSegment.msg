@@ -1,0 +1,11 @@
+uint8 FORWARD=0
+uint8 SPIN=1
+uint8 DOCK_DEPARTURE=2
+uint8 VERIFY_STOP=3
+uint8 kind
+PlannedMotionSample[] samples
+bool stop_before
+bool stop_after
+float64 estimated_time_s
+float64 geometry_error_m
+float64 curvature_bound_per_m

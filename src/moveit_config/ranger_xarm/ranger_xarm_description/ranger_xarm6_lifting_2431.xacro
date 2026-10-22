@@ -1,0 +1,215 @@
+<?xml version="1.0"?>
+<robot name="ranger_with_xarm6" xmlns:xacro="http://ros.org/wiki/xacro">
+
+
+    <!--<xacro:include filename="$(find bunker_base_description)/urdf/agx_ag95_gripper_transmission.xacro" />
+-->
+    <!-- <xacro:include filename="$(find ranger_mini)/urdf/ranger_mini.xacro" /> -->
+    <xacro:include filename="$(find ranger_mini_v3_gazebo)/xacro/ranger_mini_gazebo.xacro"/>
+
+    <xacro:include filename="$(find ranger_xarm_description)/xarm6_urdf/xarm6_robot.urdf.xacro"/>
+    <xacro:include filename="$(find ranger_xarm_base)/urdf/ranger_xarm_2431.xacro"/>
+    <xacro:include filename="$(find dh_robotics_ag95_model)/urdf/dh_robotics_ag95_model.xacro"/>  
+
+  <xacro:arg name="prefix" default=""/>
+  <xacro:arg name="ros_namespace" default="xarm"/>
+  <xacro:arg name="limited" default="false"/>
+  <xacro:arg name="effort_control" default="false"/>
+  <xacro:arg name="velocity_control" default="false"/>
+
+  <xacro:arg name="add_other_geometry" default="false"/>
+  <xacro:arg name="geometry_type" default="box"/>
+  <xacro:arg name="geometry_mass" default="0.1"/>
+  <xacro:arg name="geometry_height" default="0.1"/>
+  <xacro:arg name="geometry_radius" default="0.1"/>
+  <xacro:arg name="geometry_length" default="0.1"/>
+  <xacro:arg name="geometry_width" default="0.1"/>
+  <xacro:arg name="geometry_mesh_filename" default=""/>
+  <xacro:arg name="geometry_mesh_origin_xyz" default="0 0 0"/>
+  <xacro:arg name="geometry_mesh_origin_rpy" default="0 0 0"/>
+  <xacro:arg name="geometry_mesh_tcp_xyz" default="0 0 0"/>
+  <xacro:arg name="geometry_mesh_tcp_rpy" default="0 0 0"/>
+
+  <xacro:arg name="add_realsense_d435i" default="false"/>
+
+    <material name="lift_sleeve_dark">
+      <color rgba="0.16 0.16 0.16 1"/>
+    </material>
+
+     <link name="dummy_base_link"/>
+     <joint
+      name="dummy_base_joint"
+      type="fixed">
+      <parent
+        link="dummy_base_link" />
+      <child
+        link="base_link" />
+    </joint>
+    <!-- <xacro:dh_robotics_ag95_model prefix=" "/> -->
+      <joint
+      name="xarm_with_ag95"
+      type="fixed">
+      <origin
+        xyz="0.0 0.0 0.0"
+        rpy="0 0 0" />
+      <parent
+        link="link6" />
+      <child
+        link="dh_robotics_ag95_base_link" />
+    </joint>
+
+    <!-- 夹爪 TCP：夹爪闭合状态下两指尖下沿的中点。
+         取值来源：实机测量（非模型），复测记录见 src/tasks/doc/measurements.md 的 M2。
+           闭合：法兰安装面 -> 指尖 = 0.170 m   ← 2026-09-29 复测确认，取代 2026-09-24 的 0.230 m
+           张开：⏸ 未复测（旧记录 0.220 m 是与旧的 0.230 m 配对的，闭合值既然错了 60mm，
+                 张开值大概率同样错，不可直接沿用；需要时按 M2 的方法再量）
+         历史与教训：
+           - 2026-09-24 实测记 0.230 m；2026-09-28 用户复核时对"模型比实物短 0.083 m"这条
+             推断提出存疑，要求复测。
+           - 2026-09-29 复测：闭合值真值 = 0.170 m，比旧值小 60 mm，也就是说**旧的 tcp_link
+             探过头了 60 mm**（指尖实际在 tcp_link 上方 60 mm 处）。据此修正。
+           - 顺带结论：AG95 网格 FK 最低点约 0.147 m，与实测 0.170 只差 23 mm，
+             所以此前"模型短 83 mm"的推断是**错的**；剩余 23 mm 差值仍偏保守（网格略短），
+             但已不是量级问题。⚠ **不要再据"模型 FK"去改这里的 origin**，以实测为准。
+         用途：
+           - MoveIt 规划的末端参考点：move_group.setEndEffectorLink("tcp_link")
+           - 示教读位姿：rosrun tf tf_echo base_link tcp_link
+         影响：改这个值 = 改末端参考点，MoveIt 规划目标、TF、plane_target 的落点全部跟着变，
+         且平红点命令到的是"指尖中点"，所以夹爪会停得比之前高 60 mm。
+         纯坐标系，无几何，不参与碰撞。
+         来源：自真机验证工作区 agilex_ws_temp 合并（2026-10-13）。 -->
+    <link name="tcp_link"/>
+    <joint
+      name="tcp_joint"
+      type="fixed">
+      <origin
+        xyz="0.0 0.0 0.170"
+        rpy="0 0 0" />
+      <parent
+        link="dh_robotics_ag95_base_link" />
+      <child
+        link="tcp_link" />
+    </joint>
+
+    <!-- Physical RealSense D435 body. The fixed transform preserves the
+         vendor-tested link6-to-cam1_link pose. Camera-driver/simulator optical
+         frames are deliberately not duplicated in the robot description. -->
+    <link name="cam1_link">
+      <visual name="d435_body">
+        <origin xyz="0.0043 -0.0175 0" rpy="1.5707963267948966 0 1.5707963267948966"/>
+        <geometry>
+          <mesh filename="package://realsense2_description/meshes/d435.dae"/>
+        </geometry>
+      </visual>
+      <collision name="d435_body_collision">
+        <origin xyz="0 -0.0175 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.02505 0.090 0.025"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 -0.0175 0" rpy="0 0 0"/>
+        <mass value="0.072"/>
+        <inertia ixx="0.00005325" ixy="0" ixz="0" iyy="0.00000751" iyz="0" izz="0.00005569"/>
+      </inertial>
+    </link>
+
+    <joint name="cam1_mount_joint" type="fixed">
+      <origin xyz="0.065 -0.015 0.060" rpy="0 -1.57 3.14"/>
+      <parent link="link6"/>
+      <child link="cam1_link"/>
+    </joint>
+
+    <!-- The current arm mounting height is lift position zero. The complete
+         arm, gripper, and wrist-camera subtree is mounted on this carriage. -->
+    <link name="lift_carriage_link">
+      <inertial>
+        <origin xyz="0 0 -0.02" rpy="0 0 0"/>
+        <mass value="8.0"/>
+        <inertia ixx="0.08" ixy="0" ixz="0" iyy="0.08" iyz="0" izz="0.12"/>
+      </inertial>
+      <visual name="lift_upper_sleeve">
+        <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.216 0.216 0.4"/>
+        </geometry>
+        <material name="lift_sleeve_dark"/>
+      </visual>
+      <collision name="lift_upper_sleeve_collision">
+        <origin xyz="0 0 -0.2" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.216 0.216 0.4"/>
+        </geometry>
+      </collision>
+      <visual name="lift_arm_mount_plate">
+        <origin xyz="0 0 -0.006" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.216 0.216 0.012"/>
+        </geometry>
+        <material name="lift_arm_mount_plate_white">
+          <color rgba="1 1 1 1"/>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="lifting_joint" type="prismatic">
+      <origin xyz="-0.17 0 0.555" rpy="0 0 0"/>
+      <parent link="box_link"/>
+      <child link="lift_carriage_link"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0" upper="0.7" effort="5000" velocity="0.009333333333333334"/>
+    </joint>
+
+    <!-- This lower rigid segment rises at half lift speed and remains
+         overlapped by the upper carriage segment through full travel. -->
+    <link name="lift_mid_sleeve_link">
+      <inertial>
+        <origin xyz="0 0 -0.36" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <inertia ixx="0.0047088" ixy="0" ixz="0" iyy="0.0047088" iyz="0" izz="0.0007776"/>
+      </inertial>
+      <visual name="lift_mid_sleeve">
+        <origin xyz="0 0 -0.36" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.216 0.216 0.72"/>
+        </geometry>
+        <material name="lift_sleeve_dark"/>
+      </visual>
+      <collision name="lift_mid_sleeve_collision">
+        <origin xyz="0 0 -0.36" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.216 0.216 0.72"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="lift_mid_visual_joint" type="prismatic">
+      <origin xyz="-0.17 0 0.555" rpy="0 0 0"/>
+      <parent link="box_link"/>
+      <child link="lift_mid_sleeve_link"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0" upper="0.35" effort="1000" velocity="0.004666666666666667"/>
+      <mimic joint="lifting_joint" multiplier="0.5" offset="0"/>
+    </joint>
+
+    <joint name="ranger_with_xarm" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <parent link="lift_carriage_link" />
+      <child link="arm_base" />
+    </joint>
+
+    <joint
+      name="ranger_with_box"
+      type="fixed">
+      <origin
+        xyz="-0.02 0 0.0"
+        rpy="0 0 0" />
+      <parent
+        link="base_link" />
+      <child
+        link="box_link" />
+    </joint>
+
+
+
+</robot>

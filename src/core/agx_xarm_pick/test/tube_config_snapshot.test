@@ -1,0 +1,11 @@
+<launch>
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_fixture_profiles.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_grasp.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_preparation.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_search.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/arm_execution.yaml" />
+  <test test-name="tube_config_snapshot" pkg="agx_xarm_pick"
+        type="tube_config_snapshot_test" time-limit="30">
+    <param name="parity_task_config" value="$(find agx_xarm_pick)/test/fixtures/legacy_parity/task.yaml" />
+  </test>
+</launch>

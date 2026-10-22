@@ -1,0 +1,74 @@
+# Synthetic test input only; not a physical calibration.
+schema_version: 1
+kind: rack_profile
+id: table_grid_3x3_v1
+dimensions_xyz_m:
+- 0.12
+- 0.12
+- 0.02
+layout:
+  rows: 3
+  columns: 3
+  center_pitch_m: 0.04
+  rack_height_above_surface_m: 0.0
+  pitch_tolerance_m: 0.004
+  maximum_missing_slots: 3
+  minimum_layout_inliers: 6
+  maximum_lattice_rms_error_m: 0.004
+slots:
+- id: r0c0
+  row: 0
+  column: 0
+  center_xy_m:
+  - 0.0
+  - 0.0
+- id: r0c1
+  row: 0
+  column: 1
+  center_xy_m:
+  - 0.04
+  - 0.0
+- id: r0c2
+  row: 0
+  column: 2
+  center_xy_m:
+  - 0.08
+  - 0.0
+- id: r1c0
+  row: 1
+  column: 0
+  center_xy_m:
+  - 0.0
+  - 0.04
+- id: r1c1
+  row: 1
+  column: 1
+  center_xy_m:
+  - 0.04
+  - 0.04
+- id: r1c2
+  row: 1
+  column: 2
+  center_xy_m:
+  - 0.08
+  - 0.04
+- id: r2c0
+  row: 2
+  column: 0
+  center_xy_m:
+  - 0.0
+  - 0.08
+- id: r2c1
+  row: 2
+  column: 1
+  center_xy_m:
+  - 0.04
+  - 0.08
+- id: r2c2
+  row: 2
+  column: 2
+  center_xy_m:
+  - 0.08
+  - 0.08
+supported_container_profiles:
+- tube16

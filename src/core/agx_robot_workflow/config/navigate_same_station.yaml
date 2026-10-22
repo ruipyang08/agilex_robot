@@ -1,0 +1,6 @@
+# Both invocations require full preparation and a newly measured arrival hold.
+schema_version: 2
+workflow_id: same_station_empty_revisit
+tasks:
+  - {id: approach_a, type: navigate, target: wb-100}
+  - {id: revisit_a, type: navigate, target: wb-100}

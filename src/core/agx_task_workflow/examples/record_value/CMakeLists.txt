@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(agx_task_record_value_example)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(catkin REQUIRED COMPONENTS agx_task_workflow)
+add_executable(record_value_external main.cpp)
+target_include_directories(record_value_external PRIVATE ${catkin_INCLUDE_DIRS})
+target_link_libraries(record_value_external ${catkin_LIBRARIES})

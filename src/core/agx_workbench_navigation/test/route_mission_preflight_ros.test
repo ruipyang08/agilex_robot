@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="route_mission_preflight" pkg="agx_workbench_navigation"
+        type="route_mission_preflight_ros.py" time-limit="45" />
+</launch>

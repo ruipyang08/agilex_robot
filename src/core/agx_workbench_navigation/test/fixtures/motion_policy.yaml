@@ -1,0 +1,35 @@
+# Synthetic policy for isolated ROS tests; execution is enabled in that fixture.
+# Allocations below are NOT measured simulation or hardware qualification bounds.
+schema_version: 2
+model_id: ranger_navigation_preview_v1
+frame_id: base_link
+execution_enabled: true
+qualification: experimental_simulation
+footprint_xy_m: [[-0.5, -0.33], [0.5, -0.33], [0.5, 0.33], [-0.5, 0.33]]
+error_budget_m:
+  geometry: 0.025
+  localization: 0.10
+  tracking: 0.075
+  reserve: 0.05
+soft_clearance_m: 0.25
+sampling:
+  max_translation_step_m: 0.01
+  max_rotation_step_rad: 0.008726646259971648
+motion_limits:
+  max_speed_mps: 0.50
+  acceleration_mps2: 0.25
+  deceleration_mps2: 0.30
+  max_yaw_rate_radps: 0.40
+  angular_acceleration_radps2: 0.40
+  curvature_rate_per_m_s: 0.50
+  lateral_acceleration_mps2: 0.20
+  min_turn_radius_m: 0.4764
+  steering_settle_timeout_s: 2.0
+  stop_dwell_s: 0.12
+evidence_ids:
+  - navigation_foundations_20260929_kinematic_reconstruction
+  - navigation_motion_20260930_unqualified_budget
+
+footprint_provenance:
+  scope: diagnostic_candidate
+  source_sha256: {synthetic_progress_fixture: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}

@@ -1,0 +1,86 @@
+#ifndef MARKLISTENNER_HPP
+#define MARKLISTENNER_HPP
+#include <ros/ros.h>
+#include <ar_track_alvar_msgs/AlvarMarkers.h>
+#include <nav_msgs/Odometry.h>
+#include <tf/LinearMath/Quaternion.h>
+#include <tf/transform_listener.h>
+#include "agx_pick_msg/AgxPickSrv.h"
+#include "agx_pick_msg/PickStateSrv.h"
+#include <map>
+
+#define HOME_X -0.15
+#define HOME_Y -0.29
+#define HOME_Z 0.66
+#define PRE_OFFSET_Y 0.31
+#define PRE_OFFSET_Z 0.10
+#define PLACE_PRE_OFFSET_Y 0.33
+#define PLACE_PRE_OFFSET_Z 0.11
+#define GRIPPER_LENGTH 0.15
+#define TABLE_Z 0.16
+#define TABLE_Y 0.40
+#define HAND_BASE_LEN 0.15
+#define FILLTER_N 3
+
+namespace agxcore
+{
+  class MarkListenner
+  {
+  public:
+    explicit MarkListenner(ros::NodeHandle *nh);
+    void Callback(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr &msg);
+    void GetPickupPoint(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr &msg);
+    void PubPickupPoint(geometry_msgs::Pose &msg);
+    bool MarkCallback(agx_pick_msg::AgxPickSrv::Request &req, agx_pick_msg::AgxPickSrv::Response &res);
+    int CountData(int i, int id);
+    void SetPose(geometry_msgs::Pose msg);
+    void text(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr &msg);
+    void yolo_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+    int GetPickItemType(std::string neme);
+    // void Clear(T msg);
+    void Clear(geometry_msgs::PoseStamped *msg);
+    void Clear(geometry_msgs::Pose *msg);
+    void ClearMarkState();
+    enum Item
+    {
+      OBJECT,
+      PICK,
+      PLACE,
+      APPLE,
+      APPLE_CAM
+    };
+    enum Realorpre
+    {
+      REAL,
+      PRE
+    };
+    enum Prepose
+    {
+      FRONT,
+      UPSIDE
+    };
+    bool is_mark0_data_empty = true;
+    bool is_mark1_data_empty = true;
+    bool is_mark2_data_empty = true;
+    void Setup();
+    void initial(geometry_msgs::PoseStamped msg[]);
+    void initial(geometry_msgs::Pose msg[]);
+    ros::ServiceServer service;
+
+  private:
+    ros::NodeHandle *nh_;
+    ros::Subscriber mark;
+    ros::Subscriber place_mark;
+    ros::Subscriber yolo_sub_;
+    ros::Subscriber mark2cam_;
+    ros::Publisher pub;
+    geometry_msgs::PoseStamped temp[5];
+    geometry_msgs::Pose real_position[5];
+    std::map<int, bool> is_mark_empty;
+    geometry_msgs::Pose point_msg;
+    tf::TransformListener tfListener_;
+    bool getTransform(const std::string &parentFrame, const std::string &childFrame, agx_pick_msg::AgxPickSrv::Response &res);
+  };
+
+}
+#endif // MARKLISTENNER_HPP

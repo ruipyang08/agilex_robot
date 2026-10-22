@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>agx_tube_perception</name>
+  <version>0.1.0</version>
+  <description>Stamped RGB tube-cap detection service for the onboard ROS1 stack.</description>
+
+  <maintainer email="agx@todo.todo">agx</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>agx_pick_msg</depend>
+  <depend>bt_task_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>geometry_msgs</depend>
+  <depend>message_filters</depend>
+  <depend>rospy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf2_ros</depend>
+
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+
+  <test_depend>rostest</test_depend>
+</package>

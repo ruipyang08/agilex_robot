@@ -1,0 +1,66 @@
+# Shared simulation experiment, including the visible CAD body shell.
+# Experimental motion is not hardware geometry/error qualification.
+schema_version: 2
+model_id: ranger_neutral_postgrasp_shell_simulation_experiment_v3
+frame_id: base_link
+execution_enabled: true
+qualification: experimental_simulation
+footprint_xy_m:
+- - -0.465987
+  - -0.250114
+- - -0.33000007649072044
+  - -0.30600024604658294
+- - -0.1300000735104882
+  - -0.30600024604658294
+- - 0.34999991308560874
+  - -0.2900003180894404
+- - 0.360738
+  - -0.250114
+- - 0.36609705862885905
+  - -0.06250013041938066
+- - 0.36609705862885905
+  - 0.027499878971559675
+- - 0.360738
+  - 0.251387
+- - 0.35000006477181683
+  - 0.29000006754510554
+- - -0.14999997082679203
+  - 0.29000011194348047
+- - -0.3499999738070243
+  - 0.29000011194348047
+- - -0.465987
+  - 0.251387
+- - -0.4829544494624158
+  - 0.10687112175218619
+- - -0.4829544494624158
+  - -0.04207562583936106
+error_budget_m:
+  geometry: 0.0
+  localization: 0.0
+  tracking: 0.0
+  reserve: 0.02
+soft_clearance_m: 0.25
+sampling:
+  max_translation_step_m: 0.005
+  max_rotation_step_rad: 0.004363323129985824
+motion_limits:
+  max_speed_mps: 0.5
+  acceleration_mps2: 0.25
+  deceleration_mps2: 0.3
+  max_yaw_rate_radps: 0.55
+  angular_acceleration_radps2: 0.4
+  curvature_rate_per_m_s: 0.5
+  lateral_acceleration_mps2: 0.2
+  min_turn_radius_m: 0.4764
+  steering_settle_timeout_s: 2.0
+  stop_dwell_s: 0.12
+evidence_ids:
+- navigation_corner_review_20260930_archived_neutral_and_postgrasp_union
+- not_live_transition_qualified
+- simulation_collision_risk_accepted_20261001
+- navigation_body_shell_outline_20261001
+footprint_provenance:
+  scope: diagnostic_candidate
+  source_sha256:
+    docs/development/validation/assets/navigation_corner_review.json: 728c4c64294164fcb5e32a88947895d731d470758baf11607fd0ccf94ef6e314
+    docs/development/validation/assets/navigation_body_shell_outline_20261001.json: e64ef2af65c28db6bc0d18c8d22686ab42e7039f1af1025a1bee64303cc190c6

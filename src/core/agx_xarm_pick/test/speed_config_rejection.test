@@ -1,0 +1,9 @@
+<launch>
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_fixture_profiles.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_grasp.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_preparation.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/test_tube_search.yaml" />
+  <rosparam command="load" file="$(find agx_xarm_pick)/config/arm_execution.yaml" />
+  <test test-name="speed_config_rejection" pkg="agx_xarm_pick"
+        type="speed_config_rejection.py" time-limit="120" />
+</launch>

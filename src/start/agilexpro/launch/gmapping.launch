@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="show_rviz" default="true" />
+  <include file="$(find agilexpro)/launch/mapping.launch">
+    <arg name="show_rviz" value="$(arg show_rviz)" />
+  </include>
+</launch>

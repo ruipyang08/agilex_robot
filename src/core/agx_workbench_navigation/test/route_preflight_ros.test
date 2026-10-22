@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="route_preflight_ros" pkg="agx_workbench_navigation"
+        type="route_preflight_ros" time-limit="25" />
+</launch>

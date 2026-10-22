@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Deployable workbench behavior. Drivers and simulation transport remain
+       the responsibility of the selected top-level mode. -->
+  <arg name="map_file" />
+  <arg name="registry_file" default="" />
+  <arg name="operation_mode" default="hardware" />
+  <arg name="motion_policy_file"
+       default="$(find agx_workbench_navigation)/config/navigation_motion_policy.yaml" />
+  <!-- Trusted installed files. Service clients select IDs/digests, never paths. -->
+  <arg name="route_profile_files" default="[]" />
+  <arg name="commissioning" default="false" />
+  <arg name="rover_execution_config_file"
+       default="$(find agx_workbench_navigation)/config/rover_execution.yaml" />
+  <!-- Set one dictionary atomically: rosparam/load flattens maps, dropping an
+       empty override map and retaining deleted overrides on a surviving master. -->
+  <param name="/rover_execution" type="yaml" textfile="$(arg rover_execution_config_file)" />
+  <arg name="show_rviz" default="true" />
+  <arg name="amcl_tf_broadcast" default="true" />
+  <arg name="localization_timeout_s" default="10.0" />
+  <arg name="localization_pose_topic" default="/amcl_pose" />
+  <arg name="localization_nomotion_service" default="/request_nomotion_update" />
+  <arg name="camera_timeout_s" default="10.0" />
+  <arg name="navigation_timeout_s" default="120.0" />
+  <arg name="tag_acquisition_timeout_s" default="10.0" />
+  <arg name="docking_timeout_s" default="45.0" />
+  <arg name="tag_history_max_age_s" default="0.60" />
+  <arg name="tag_evidence_max_age_s" default="0.25" />
+  <arg name="tag_receipt_max_age_s" default="$(arg tag_evidence_max_age_s)" />
+  <arg name="tag_reacquisition_timeout_s" default="5.0" />
+  <arg name="lidar_state_receipt_timeout_s" default="0.25" />
+  <arg name="odometry_receipt_timeout_s" default="0.25" />
+  <!-- Hardware keeps this conservative default until its physical full-tag
+       field-of-view limit and front reference are commissioned together. -->
+  <arg name="visual_handoff_x_m" default="2.05" />
+  <arg name="visual_phase_timeout_s" default="5.0" />
+  <arg name="visual_timeout_s" default="15.0" />
+  <arg name="blind_timeout_s" default="45.0" />
+  <arg name="camera_config_file"
+       default="$(find agx_workbench_navigation)/config/cam2.yaml" />
+  <arg name="parking_config_file"
+       default="$(find agx_workbench_navigation)/config/parking.yaml" />
+  <arg name="lidar_config_file"
+       default="$(find agx_workbench_navigation)/config/lidar_safety.yaml" />
+  <arg name="authority_config_file"
+       default="$(find agx_workbench_navigation)/config/authority.yaml" />
+  <!-- Topic indirection keeps the deployable defaults unchanged while allowing
+       an offboard-only acceptance proxy to sit between simulated inputs and
+       the real onboard behavior. -->
+  <arg name="navigation_cmd_vel_topic"
+       default="/workbench_nav/cmd_vel/navigation" />
+  <arg name="docking_cmd_vel_topic"
+       default="/workbench_nav/cmd_vel/docking" />
+  <arg name="detector_marker_topic" default="/cam2/ar_pose_marker" />
+  <arg name="mission_marker_topic" default="/cam2/ar_pose_marker" />
+  <arg name="mission_odom_topic" default="/odom" />
+  <arg name="arbiter_odom_topic" default="/odom" />
+  <arg name="lidar_odom_topic" default="/odom" />
+  <arg name="lidar_points_topic" default="/rslidar_points" />
+  <arg name="start_lidar_odometry" default="true" />
+
+  <include file="$(find agilexpro)/launch/lidar_processing.launch">
+    <arg name="start_odometry" value="$(arg start_lidar_odometry)" />
+  </include>
+
+  <!-- Replace the full mapping atomically: no stale missing safety keys. -->
+  <param name="/move_base/RangerLocalPlanner/motion_policy_file" value="$(arg motion_policy_file)" />
+  <param name="/move_base/RangerLocalPlanner/operation_mode" value="$(arg operation_mode)" />
+  <param name="/move_base/RangerGlobalPlanner/motion_policy_file" value="$(arg motion_policy_file)" />
+  <param name="/move_base/RangerGlobalPlanner/route_map_file" value="$(arg map_file)" />
+  <param name="/move_base/RangerGlobalPlanner/route_registry_file" value="$(arg registry_file)" />
+  <param name="/move_base/RangerGlobalPlanner/route_lidar_config_file" value="$(arg lidar_config_file)" />
+  <param name="/move_base/RangerGlobalPlanner/route_docking_config_file" value="$(find agx_workbench_navigation)/config/docking.yaml" />
+  <param name="/move_base/RangerGlobalPlanner/operation_mode" value="$(arg operation_mode)" />
+  <param name="/move_base/RangerGlobalPlanner/route_localization_pose_topic" value="$(arg localization_pose_topic)" />
+
+  <include file="$(find agilexpro)/launch/navigation_application.launch">
+    <arg name="map_file" value="$(arg map_file)" />
+    <arg name="show_rviz" value="$(arg show_rviz)" />
+    <!-- Standard nav_core Twist output is diagnostic only. The plugin emits
+         its original operation envelope directly onto the arbiter route. -->
+    <arg name="cmd_vel_topic" value="/workbench_nav/diagnostics/move_base_cmd_vel" />
+    <arg name="authorized_cmd_vel_topic" value="$(arg navigation_cmd_vel_topic)" />
+    <arg name="amcl_tf_broadcast" value="$(arg amcl_tf_broadcast)" />
+    <arg name="costmap_common_params_file"
+         value="$(find agx_workbench_navigation)/config/costmap_safety_params.yaml" />
+    <arg name="global_costmap_common_params_file"
+         value="$(find agx_workbench_navigation)/config/global_costmap_safety_params.yaml" />
+    <arg name="local_costmap_common_params_file"
+         value="$(find agx_workbench_navigation)/config/costmap_safety_params.yaml" />
+    <arg name="base_local_planner_params_file"
+         value="$(find agx_workbench_navigation)/config/ranger_local_planner.yaml" />
+    <arg name="base_global_planner_plugin"
+         value="agx_workbench_navigation/RangerGlobalPlanner" />
+    <arg name="base_local_planner_plugin"
+         value="agx_workbench_navigation/RangerLocalPlanner" />
+    <!-- Retained costmap visualization/inflation settings. Route admission
+         checks raw occupancy with the installed motion-policy footprint. -->
+    <arg name="global_inflation_radius" value="2.00" />
+    <arg name="global_cost_scaling_factor" value="3.0" />
+    <arg name="local_inflation_radius" value="1.10" />
+    <arg name="local_cost_scaling_factor" value="3.0" />
+    <arg name="local_costmap_width_m" value="4.0" />
+    <arg name="local_costmap_height_m" value="4.0" />
+    <!-- The symmetric course has two valid bypasses. A lower replan rate lets
+         the physical rover commit to one branch instead of alternating at
+         every controller update; local LiDAR avoidance and the hard safety
+         veto remain continuously active. -->
+    <arg name="planner_frequency_hz" value="0.5" />
+    <!-- The stock rotate recovery does not consume RangerLocalPlanner's
+         LiDAR/costmap rotation evidence. Fail stopped instead of allowing
+         that unchecked actuator path to take over after a local block. -->
+    <arg name="recovery_behavior_enabled" value="false" />
+    <!-- This plugin requires a finite, reported translation/rotation progress
+         guard. Replace the stock XY-only watchdog in this composition only;
+         mission/source and workflow/steady total deadlines remain independent. -->
+    <arg name="oscillation_timeout_s" value="0.0" />
+  </include>
+
+  <include file="$(find agx_workbench_navigation)/launch/cam2_perception.launch">
+    <arg name="marker_topic" value="$(arg detector_marker_topic)" />
+  </include>
+
+  <node pkg="agx_workbench_navigation"
+        type="lidar_safety_monitor.py"
+        name="lidar_safety_monitor"
+        output="screen"
+        required="true">
+    <param name="config_file" value="$(arg lidar_config_file)" />
+    <param name="motion_policy_file" value="$(arg motion_policy_file)" />
+    <remap from="/odom" to="$(arg lidar_odom_topic)" />
+    <remap from="/rslidar_points" to="$(arg lidar_points_topic)" />
+  </node>
+
+  <node pkg="agx_workbench_navigation"
+        type="base_command_arbiter.py"
+        name="base_command_arbiter"
+        output="screen"
+        required="true">
+    <param name="config_file" value="$(arg authority_config_file)" />
+    <param name="motion_policy_file" value="$(arg motion_policy_file)" />
+    <param name="lidar_config_file" value="$(arg lidar_config_file)" />
+    <param name="operation_mode" value="$(arg operation_mode)" />
+    <remap from="/odom" to="$(arg arbiter_odom_topic)" />
+  </node>
+
+  <node unless="$(arg commissioning)"
+        pkg="agx_workbench_navigation"
+        type="workbench_mission.py"
+        name="workbench_mission"
+        output="screen"
+        required="true">
+    <param name="registry_path" value="$(arg registry_file)" />
+    <param name="motion_policy_file" value="$(arg motion_policy_file)" />
+    <rosparam param="route_profile_files" subst_value="true">$(arg route_profile_files)</rosparam>
+    <param name="map_yaml" value="$(arg map_file)" />
+    <param name="operation_mode" value="$(arg operation_mode)" />
+    <param name="commissioning" value="$(arg commissioning)" />
+    <param name="camera_config" value="$(arg camera_config_file)" />
+    <param name="parking_config" value="$(arg parking_config_file)" />
+    <param name="lidar_config" value="$(arg lidar_config_file)" />
+    <param name="localization_timeout_s"
+           value="$(arg localization_timeout_s)" />
+    <param name="localization_pose_topic" value="$(arg localization_pose_topic)" />
+    <param name="localization_nomotion_service" value="$(arg localization_nomotion_service)" type="str" />
+    <param name="camera_timeout_s"
+           value="$(arg camera_timeout_s)" />
+    <param name="navigation_timeout_s"
+           value="$(arg navigation_timeout_s)" />
+    <param name="tag_acquisition_timeout_s"
+           value="$(arg tag_acquisition_timeout_s)" />
+    <param name="docking_timeout_s"
+           value="$(arg docking_timeout_s)" />
+    <param name="tag_history_max_age_s"
+           value="$(arg tag_history_max_age_s)" />
+    <param name="tag_evidence_max_age_s"
+           value="$(arg tag_evidence_max_age_s)" />
+    <param name="tag_receipt_max_age_s"
+           value="$(arg tag_receipt_max_age_s)" />
+    <param name="tag_reacquisition_timeout_s"
+           value="$(arg tag_reacquisition_timeout_s)" />
+    <param name="lidar_state_receipt_timeout_s"
+           value="$(arg lidar_state_receipt_timeout_s)" />
+    <param name="odometry_receipt_timeout_s"
+           value="$(arg odometry_receipt_timeout_s)" />
+    <param name="visual_handoff_x_m"
+           value="$(arg visual_handoff_x_m)" />
+    <param name="visual_phase_timeout_s"
+           value="$(arg visual_phase_timeout_s)" />
+    <param name="visual_timeout_s"
+           value="$(arg visual_timeout_s)" />
+    <param name="blind_timeout_s"
+           value="$(arg blind_timeout_s)" />
+    <remap from="/workbench_nav/cmd_vel/docking"
+           to="$(arg docking_cmd_vel_topic)" />
+    <remap from="/cam2/ar_pose_marker" to="$(arg mission_marker_topic)" />
+    <remap from="/odom" to="$(arg mission_odom_topic)" />
+  </node>
+</launch>

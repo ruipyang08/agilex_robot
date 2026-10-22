@@ -1,0 +1,7 @@
+<launch>
+  <rosparam command="load" file="$(find agx_workbench_navigation)/config/ranger_local_planner.yaml" ns="navigation_progress_ros" />
+  <param name="/navigation_progress_ros/RangerLocalPlanner/motion_policy_file" value="$(find agx_workbench_navigation)/test/fixtures/motion_policy.yaml" />
+  <param name="/navigation_progress_ros/RangerLocalPlanner/operation_mode" value="simulation" />
+  <test test-name="navigation_progress_ros" pkg="agx_workbench_navigation"
+        type="navigation_progress_ros" time-limit="90" />
+</launch>

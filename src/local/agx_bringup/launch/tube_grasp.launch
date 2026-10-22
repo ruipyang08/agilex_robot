@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Deployable task composition shared by hardware and simulation. -->
+  <arg
+      name="profile_config"
+      default="$(find agx_xarm_pick)/config/test_tube_fixture_profiles.yaml" />
+  <arg
+      name="grasp_config"
+      default="$(find agx_xarm_pick)/config/test_tube_grasp.yaml" />
+  <arg
+      name="preparation_config"
+      default="$(find agx_xarm_pick)/config/test_tube_preparation.yaml" />
+  <arg
+      name="search_config"
+      default="$(find agx_xarm_pick)/config/test_tube_search.yaml" />
+  <arg name="arm_execution_config"
+       default="$(find agx_xarm_pick)/config/arm_execution.yaml" />
+  <arg name="color_topic" default="/cam1/color/image_raw" />
+  <arg name="camera_info_topic" default="/cam1/color/camera_info" />
+
+  <rosparam command="load" file="$(arg arm_execution_config)" />
+  <rosparam command="load" file="$(arg profile_config)" />
+  <rosparam command="load" file="$(arg grasp_config)" />
+  <rosparam command="load" file="$(arg preparation_config)" />
+  <rosparam command="load" file="$(arg search_config)" />
+
+  <include file="$(find agx_tube_perception)/launch/tube_cap_detector.launch">
+    <arg name="load_shared_config" value="false" />
+    <arg name="color_topic" value="$(arg color_topic)" />
+    <arg name="camera_info_topic" value="$(arg camera_info_topic)" />
+  </include>
+</launch>

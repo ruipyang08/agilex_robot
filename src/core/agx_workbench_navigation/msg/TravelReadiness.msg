@@ -1,0 +1,22 @@
+# Produced by the onboard measured posture/custody guard, never from recipe intent.
+std_msgs/Header header
+string run_id
+string departure_id
+string session_id
+uint64 hold_epoch
+uint64 sequence
+uint64 state_revision
+string config_id
+string travel_profile_id
+bool arm_ready
+bool lift_ready
+bool producers_stopped
+bool clearance_verified
+uint8 UNKNOWN=0
+uint8 EMPTY=1
+uint8 HOLDING=2
+uint8 payload_state
+string payload_ref
+string container_profile_id
+bool ready
+string reason

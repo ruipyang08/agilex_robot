@@ -1,0 +1,20 @@
+string invocation_id
+string existing_route_id
+string model_digest
+string registry_digest
+geometry_msgs/PoseStamped measured_start
+geometry_msgs/PoseStamped coarse_start
+geometry_msgs/PoseStamped goal
+PlannedMotionSegment[] departure_prefix
+string departure_source_id
+---
+uint8 READY=0
+uint8 NO_ROUTE=1
+uint8 SEARCH_LIMIT=2
+uint8 EVIDENCE_UNAVAILABLE=3
+uint8 START_MISMATCH=4
+uint8 ROUTE_INVALIDATED=5
+uint8 INVALID_REQUEST=6
+uint8 status
+string detail
+NavigationRoute route

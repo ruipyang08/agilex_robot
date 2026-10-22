@@ -1,0 +1,21 @@
+# Mission-owned read-only composition. IDs resolve to installed profiles only.
+string invocation_id
+string target
+string travel_profile_id
+# Digest of the exact profile bytes admitted by the workflow.
+string travel_profile_digest
+string existing_route_id
+# A read-only preview never enables execution. Execution additionally requires
+# the installed policy's enable/qualification gate.
+bool for_execution
+---
+uint8 READY=0
+uint8 NO_ROUTE=1
+uint8 SEARCH_LIMIT=2
+uint8 EVIDENCE_UNAVAILABLE=3
+uint8 START_MISMATCH=4
+uint8 ROUTE_INVALIDATED=5
+uint8 INVALID_REQUEST=6
+uint8 status
+string detail
+NavigationRoute route

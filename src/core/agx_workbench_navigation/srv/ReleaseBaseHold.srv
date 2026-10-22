@@ -1,0 +1,10 @@
+string run_id
+string departure_id
+string expected_session_id
+uint64 expected_hold_epoch
+string permit_id
+---
+bool accepted
+string reason
+string session_id
+uint64 hold_epoch

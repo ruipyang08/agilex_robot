@@ -1,0 +1,76 @@
+<launch>
+  <!-- Isolated rostest master/network only. All measurements are synthetic;
+       this graph has no driver, arbiter, hardware bridge or physical actuator. -->
+  <arg name="evidence_file" default="$(find agx_workbench_navigation)/../../../../tmp/navigation_motion/cleanup_20261002/navigation_progress_move_base_evidence.json" />
+  <param name="use_sim_time" value="true" />
+  <group ns="navigation_progress_action_test">
+    <remap from="/tf" to="/navigation_progress_action_test/tf" />
+    <remap from="/tf_static" to="/navigation_progress_action_test/tf_static" />
+    <node pkg="move_base" type="move_base" name="move_base" output="screen" required="true">
+      <rosparam command="load" file="$(find agx_workbench_navigation)/config/ranger_local_planner.yaml" />
+      <param name="RangerLocalPlanner/motion_policy_file" value="$(find agx_workbench_navigation)/test/fixtures/motion_policy.yaml" />
+      <param name="RangerLocalPlanner/operation_mode" value="simulation" />
+      <param name="RangerGlobalPlanner/motion_policy_file" value="$(find agx_workbench_navigation)/test/fixtures/motion_policy.yaml" />
+      <param name="RangerGlobalPlanner/route_map_file" value="$(find agx_workbench_navigation)/test/fixtures/free_map.yaml" />
+      <param name="RangerGlobalPlanner/route_registry_file" value="$(find agx_workbench_navigation)/test/fixtures/registry.yaml" />
+      <param name="RangerGlobalPlanner/route_lidar_config_file" value="$(find agx_workbench_navigation)/config/lidar_safety.yaml" />
+      <param name="RangerGlobalPlanner/route_localization_pose_topic" value="/navigation_progress_action_test/amcl_pose" />
+      <param name="base_global_planner" value="agx_workbench_navigation/RangerGlobalPlanner" />
+      <param name="base_local_planner" value="agx_workbench_navigation/RangerLocalPlanner" />
+      <param name="planner_frequency" value="0.5" />
+      <param name="controller_frequency" value="20.0" />
+      <param name="controller_patience" value="15.0" />
+      <param name="planner_patience" value="5.0" />
+      <param name="oscillation_timeout" value="0.0" />
+      <param name="recovery_behavior_enabled" value="false" />
+      <param name="clearing_rotation_allowed" value="false" />
+      <param name="shutdown_costmaps" value="false" />
+      <rosparam param="recovery_behaviors">[]</rosparam>
+      <rosparam ns="global_costmap">
+        global_frame: map
+        robot_base_frame: base_link
+        update_frequency: 20.0
+        publish_frequency: 0.0
+        transform_tolerance: 0.25
+        rolling_window: false
+        track_unknown_space: false
+        footprint: [[-0.3, -0.2], [-0.3, 0.2], [0.3, 0.2], [0.3, -0.2]]
+        footprint_padding: 0.0
+        plugins: [{name: static_map, type: 'costmap_2d::StaticLayer'}, {name: obstacles, type: 'costmap_2d::ObstacleLayer'}]
+        obstacles: {observation_sources: ''}
+        static_map: {map_topic: /navigation_progress_action_test/map, subscribe_to_updates: false}
+      </rosparam>
+      <rosparam ns="local_costmap">
+        global_frame: map
+        robot_base_frame: base_link
+        update_frequency: 20.0
+        publish_frequency: 0.0
+        transform_tolerance: 0.25
+        rolling_window: false
+        track_unknown_space: false
+        footprint: [[-0.3, -0.2], [-0.3, 0.2], [0.3, 0.2], [0.3, -0.2]]
+        footprint_padding: 0.0
+        plugins: [{name: static_map, type: 'costmap_2d::StaticLayer'}, {name: obstacles, type: 'costmap_2d::ObstacleLayer'}]
+        obstacles: {observation_sources: ''}
+        static_map: {map_topic: /navigation_progress_action_test/map, subscribe_to_updates: false}
+      </rosparam>
+      <remap from="/map" to="/navigation_progress_action_test/map" />
+      <remap from="/workbench_nav/lidar_obstacle_snapshot" to="/navigation_progress_action_test/lidar_obstacle_snapshot" />
+      <remap from="/odom" to="/navigation_progress_action_test/odom" />
+      <remap from="/workbench_nav/authority_state" to="/navigation_progress_action_test/authority_state" />
+      <remap from="/workbench_nav/lidar_safety_state" to="/navigation_progress_action_test/lidar_safety_state" />
+      <remap from="/workbench_nav/coarse_navigation_state" to="/navigation_progress_action_test/coarse_state" />
+      <remap from="/move_base/RangerLocalPlanner/local_plan" to="/navigation_progress_action_test/local_plan" />
+      <remap from="/workbench_nav/cmd_vel/navigation" to="/navigation_progress_action_test/authorized_command" />
+      <remap from="/workbench_nav/bind_navigation_source" to="/navigation_progress_action_test/bind_source" />
+      <remap from="/workbench_nav/effective_config/local_planner" to="/navigation_progress_action_test/effective/local_planner" />
+      <remap from="/workbench_nav/effective_config/global_planner" to="/navigation_progress_action_test/effective/global_planner" />
+      <remap from="cmd_vel" to="/navigation_progress_action_test/diagnostic_cmd_vel" />
+    </node>
+    <test test-name="navigation_progress_move_base" pkg="agx_workbench_navigation"
+          type="navigation_progress_move_base.py" time-limit="85">
+      <param name="synthetic_fixture" value="true" />
+      <param name="evidence_file" value="$(arg evidence_file)" />
+    </test>
+  </group>
+</launch>

@@ -1,0 +1,5 @@
+<launch>
+    <node name="test" type="viewtest" pkg="agx_xarm_pick" output="screen">
+        <rosparam command="load" file="$(find agx_xarm_pick)/config/place.yaml"/>
+    </node>
+</launch>

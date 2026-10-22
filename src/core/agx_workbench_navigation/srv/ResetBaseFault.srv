@@ -1,0 +1,7 @@
+string expected_session_id
+uint64 expected_hold_epoch
+string reason
+---
+bool accepted
+uint8 state
+string reason

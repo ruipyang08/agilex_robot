@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="start_processing" default="true" />
+  <arg name="show_rviz" default="true" />
+
+  <include file="$(find rslidar_sdk)/launch/start.launch">
+    <arg name="show_rviz" value="$(arg show_rviz)" />
+  </include>
+  <include if="$(arg start_processing)"
+           file="$(find agilexpro)/launch/lidar_processing.launch" />
+</launch>

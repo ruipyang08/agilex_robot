@@ -1,0 +1,7 @@
+<launch>
+  <!-- Separate watchdog/master for the genuine unchanged 15s monitor timeout. -->
+  <param name="/use_sim_time" value="false" />
+  <test test-name="grasp_unjoined_process" pkg="agx_robot_workflow"
+        type="workflow_grasp_host_binding_test"
+        args="--gtest_filter=GraspJournalUnjoinedProcess.*" time-limit="45" />
+</launch>

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- The only deployable top-level mode. All defaults target real hardware. -->
+  <param name="/use_sim_time" value="false" />
+
+  <arg name="base_port" default="can0" />
+  <arg name="base_odom_topic" default="/odom" />
+  <arg name="robot_ip" default="192.168.1.202" />
+  <arg name="start_base" default="true" />
+  <arg name="start_lidar" default="true" />
+  <arg name="start_lidar_processing" default="true" />
+  <arg name="start_arm" default="true" />
+  <arg name="start_gripper" default="true" />
+  <arg name="enable_pick_behavior" default="false" />
+  <arg name="enable_tube_grasp" default="false" />
+  <arg name="tube_color_topic" default="/cam1/color/image_raw" />
+  <arg name="tube_camera_info_topic" default="/cam1/color/camera_info" />
+
+  <!-- Preserve the launch contracts exercised during the hardware tests. -->
+  <include if="$(arg start_base)"
+           file="$(find ranger_bringup)/launch/ranger_mini_v2.launch">
+    <arg name="port_name" value="$(arg base_port)" />
+    <arg name="odom_topic_name" value="$(arg base_odom_topic)" />
+  </include>
+  <include if="$(arg start_lidar)"
+           file="$(find agilexpro)/launch/open_lidar.launch">
+    <arg name="start_processing" value="$(arg start_lidar_processing)" />
+    <!-- arm_rviz (setup_arm.launch) is the single RViz for this mode. -->
+    <arg name="show_rviz" value="false" />
+  </include>
+  <include if="$(arg start_arm)"
+           file="$(find agx_xarm_bringup)/launch/setup_arm.launch">
+    <arg name="robot_ip" value="$(arg robot_ip)" />
+    <!-- The gripper is started below via start_gripper, so keep setup_arm from
+         starting a second /dh_gripper_driver (duplicate node names fail to launch). -->
+    <arg name="open_gripper" value="false" />
+  </include>
+  <include if="$(arg start_gripper)"
+           file="$(find agx_xarm_bringup)/launch/open_gripper.launch" />
+
+  <include file="$(find agx_bringup)/launch/application.launch">
+    <arg name="enable_pick_behavior" value="$(arg enable_pick_behavior)" />
+  </include>
+  <include if="$(arg enable_tube_grasp)"
+           file="$(find agx_bringup)/launch/tube_grasp.launch">
+    <arg name="color_topic" value="$(arg tube_color_topic)" />
+    <arg name="camera_info_topic" value="$(arg tube_camera_info_topic)" />
+  </include>
+</launch>

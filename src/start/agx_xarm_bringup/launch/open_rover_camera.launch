@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Dedicated rover D435 driver. The xacro mount owns base_link to
+       cam2_link; the RealSense driver owns its color and optical frames. -->
+  <arg name="serial_no" default="348522075124" />
+  <arg name="enable_depth" default="false" />
+  <arg name="enable_sync" default="false" />
+  <arg name="align_depth" default="false" />
+
+  <include file="$(find agx_xarm_bringup)/launch/agx_ar_pose.launch">
+    <arg name="camera_namespace" value="cam2" />
+    <arg name="serial_no" value="$(arg serial_no)" />
+    <arg name="enable_depth" value="$(arg enable_depth)" />
+    <arg name="enable_sync" value="$(arg enable_sync)" />
+    <arg name="align_depth" value="$(arg align_depth)" />
+  </include>
+</launch>

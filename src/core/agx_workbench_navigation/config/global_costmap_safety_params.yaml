@@ -1,0 +1,22 @@
+# GlobalPlanner has no heading state. Plan the rover centre as a disk large
+# enough for the physical footprint's complete rotation plus the commissioned
+# 0.25 m LiDAR clearance. The local planner checks a 0.95 m disk at every
+# projected pose; the global disk must be larger to absorb grid rasterization
+# and route-tracking error. The 0.95 m global disk admitted a route within
+# about 1.01 m of a mapped obstacle at (1.51, 2.09), where the local planner's
+# full-rotation clearance query rejected its current pose. A 1.10 m global disk
+# excludes that corridor while both registered staging poses remain connected.
+robot_radius: 1.10
+obstacle_range: 1.5
+raytrace_range: 3.5
+transform_tolerance: 0.13
+
+observation_sources: scan
+scan:
+  data_type: LaserScan
+  topic: scan
+  marking: true
+  clearing: true
+  inf_is_valid: true
+
+map_type: costmap

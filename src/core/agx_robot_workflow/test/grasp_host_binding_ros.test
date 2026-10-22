@@ -1,0 +1,6 @@
+<launch>
+  <!-- Isolated rostest master only. No robot, simulator, MoveIt or bridge nodes. -->
+  <test test-name="grasp_host_binding" pkg="agx_robot_workflow"
+        type="workflow_grasp_host_binding_test"
+        args="--gtest_filter=-GraspJournalUnjoinedProcess.*" time-limit="45" />
+</launch>

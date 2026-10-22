@@ -1,0 +1,18 @@
+# Workbench local-planner physical chassis footprint, matching the downstream
+# LiDAR evaluator axes. The separate global profile uses the full-rotation-safe
+# disk required by the arbiter while this polygon keeps projected arc checks
+# faithful to the body that actually moves.
+footprint: [[0.50, 0.33], [0.50, -0.33], [-0.50, -0.33], [-0.50, 0.33]]
+obstacle_range: 1.5
+raytrace_range: 3.5
+transform_tolerance: 0.13
+
+observation_sources: scan
+scan:
+  data_type: LaserScan
+  topic: scan
+  marking: true
+  clearing: true
+  inf_is_valid: true
+
+map_type: costmap

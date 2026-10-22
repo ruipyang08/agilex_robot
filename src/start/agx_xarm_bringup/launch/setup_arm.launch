@@ -1,0 +1,130 @@
+<?xml version='1.0'?>
+<launch>
+	<arg name="robot_ip" default="192.168.1.202" />
+	<arg name="show_rviz" default="true" />
+	<arg name="open_camera" default="true" />
+	<arg name="open_gripper" default="true" />
+	<arg name="open_lift" default="true" />
+	<arg name="open_plane_target" default="true" />
+	<!-- 平面红点是否真动机械臂。true（默认）= 点一下就规划并执行；
+	     调试/演示时可用 plane_target_execute:=false 退回干跑（只规划不执行）。
+	     另有 ~vel_scaling（默认 0.2）、~planning_time、~plane_z、~rpy_deg 等参数，
+	     需要时按 <param/> 追加到 plane_target_marker 节点上。 -->
+	<arg name="plane_target_execute" default="true" />
+
+	<!-- DH gripper. Teach mode relaxes it only while this driver is publishing. -->
+	<include if="$(arg open_gripper)" file="$(find agx_xarm_bringup)/launch/open_gripper.launch" />
+
+	<!-- 升降柱 (830ABS)。配置 initMode=0，节点启动本身不会运动。 -->
+	<include if="$(arg open_lift)" file="$(find lifting_ctrl)/launch/start_motor.launch" />
+
+	<!-- MoveIt executes the gripper group through this action server -->
+	<node pkg="agx_xarm_bringup"
+	      type="gripper_traj_bridge.py"
+	      name="gripper_traj_bridge"
+	      output="screen" />
+
+	<!-- Read-only height feedback: /lifter_1 state -> lift joint states.
+	     Never commands the lift; the slider / lift CLI stay the only drivers.
+	     joint_name must match robot_description (canonical xacro names the
+	     prismatic "lifting_joint"). -->
+	<node pkg="agx_xarm_bringup"
+	      type="lift_joint_bridge.py"
+	      name="lift_joint_bridge"
+	      output="screen">
+	  <param name="joint_name" value="lifting_joint" />
+	</node>
+
+	<!-- link_base_lift0: snapshot of link_base at lift=0 (mechanical lowest).
+	     Static in base_link frame: xyz from lift_joint origin z=0.555 +
+	     x=-0.17+(-0.02)=-0.19 (ranger_with_box), never moves with the lift.
+	     The real link_base still rides the prismatic lift_joint unchanged. -->
+	<node pkg="tf" type="static_transform_publisher" name="link_base_lift0_broadcaster"
+	      args="-0.19 0 0.555 0 0 0 base_link link_base_lift0 100" />
+
+	<!-- deck_top: top surface of the 2431 mounting box (the deck the lift
+	     column sits on), caliper-measured 208 mm below link_base_lift0.
+	     Static, never moves with the lift; lands at (-0.19, 0, 0.347) in
+	     base_link. See tasks/doc/decisions.md D18, measurements.md M1. -->
+	<node pkg="tf" type="static_transform_publisher" name="deck_top_broadcaster"
+	      args="0 0 -0.208 0 0 0 link_base_lift0 deck_top 100" />
+
+	<!-- RViz markers: green = lift column collision zone, red = xArm base
+	     footprint. Rides link_base, so it follows the lift height. Display
+	     only ; no effect on collision checking or planning. -->
+	<node pkg="agx_xarm_bringup"
+	      type="lift_zone_viz.py"
+	      name="lift_zone_viz"
+	      output="screen" />
+
+	<!-- Provisional safety plane: translucent yellow box 100 mm above
+	     deck_top (2431 box top surface), sized to cover the chassis
+	     footprint. Display only ; no effect on collision checking or
+	     planning. -->
+	<node pkg="agx_xarm_bringup"
+	      type="safety_plane_viz.py"
+	      name="safety_plane_viz"
+	      output="screen" />
+
+	<!-- Joint admittance drag-teach. Stop returns the arm to servo mode. -->
+	<node pkg="agx_xarm_bringup"
+	      type="admittance_teach.py"
+	      name="admittance_teach"
+	      output="screen">
+		<param name="sensitivity" value="5" />
+		<param name="cartesian" value="false" />
+	</node>
+
+	<!-- Wrist RealSense. Color image is /cam1/color/image_raw, mounted on link6. -->
+	<include if="$(arg open_camera)" file="$(find agx_xarm_bringup)/launch/open_camera.launch" />
+
+	<!-- Real arm + MoveIt move_group. RViz MotionPlanning panel stays off. -->
+	<include file="$(find ranger_xarm_lifting_moveit_config)/launch/realMove_exec.launch">
+		<arg name="robot_ip" value="$(arg robot_ip)"/>
+		<arg name="show_rviz" value="false"/>
+	</include>
+
+	<!-- Put points and the grasp/put services. The old joint-slider console
+	     and the draggable red dot are not started.
+
+	     /plane_target/put (agx_plane_target/PutPoint, int32 point 1~6)
+	     places a held object on one of the six taught put points
+	     (measurements.md M6, frame link_base_lift0) in one atomic action:
+	     close the gripper to 200 -> approach point 150 mm above ->
+	     straight-line descent -> open the gripper -> straight-line lift ->
+	     back to initial.
+	     /plane_target/pick (agx_plane_target/PickPoint, same point 1~6)
+	     picks from the same points: confirm the gripper is open (1000,
+	     not holding anything) -> safety height above the point ->
+	     straight-line descent -> close the gripper to 200 ->
+	     straight-line lift -> back to initial.
+	       pick 3         (agx_plane_target/scripts/pick)
+	     The six points are drawn as numbered red balls on
+	     /plane_target/put_points (plain markers, display only).
+	     Terminal interface:
+	       put 3          progress on /plane_target/put_status
+	       pick 3         progress on /plane_target/pick_status
+	     (`put install` / `pick install` link the commands into ~/bin.)
+	     With _enable_arm:=false each one plans the approach move only
+	     and never commands the gripper.
+	     Grasp numbers (~grasp_position / ~grasp_force / ~grasp_speed /
+	     ~grasp_preopen) are read fresh on every grasp:
+	       rosparam set /plane_target_marker/grasp_position 300 -->
+	<node if="$(arg open_plane_target)"
+	      pkg="agx_plane_target"
+	      type="plane_target_marker.py"
+	      name="plane_target_marker"
+	      output="screen">
+		<param name="enable_arm" value="$(arg plane_target_execute)" />
+	</node>
+
+	<node if="$(arg show_rviz)"
+	      pkg="rviz"
+	      type="rviz"
+	      name="arm_rviz"
+	      args="-d $(find agx_xarm_bringup)/rviz/arm_display.rviz"
+	      output="screen">
+		<!-- This popup sits on top of the deck and hides the six put balls. -->
+		<env name="DISABLE_ROS1_EOL_WARNINGS" value="1" />
+	</node>
+</launch>

@@ -1,0 +1,6 @@
+schema_version: 2
+workflow_id: record_value_example
+tasks:
+  - id: record_sample
+    type: record_value
+    value: sample-1

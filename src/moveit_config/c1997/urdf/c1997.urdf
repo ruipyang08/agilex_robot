@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="c1997">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.0084436 -0.00014279 -0.13705"
+        rpy="0 0 0" />
+      <mass
+        value="34.513" />
+      <inertia
+        ixx="0.4033"
+        ixy="-3.9974E-06"
+        ixz="3.7991E-05"
+        iyy="0.30179"
+        iyz="-0.00014336"
+        izz="0.53794" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://c1997/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://c1997/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="box_link">
+    <inertial>
+      <origin
+        xyz="-0.08608 0.012247 0.19666"
+        rpy="0 0 0" />
+      <mass
+        value="2.4411" />
+      <inertia
+        ixx="0.040527"
+        ixy="-8.9336E-05"
+        ixz="-0.0013967"
+        iyy="0.09139"
+        iyz="1.3077E-05"
+        izz="0.088892" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://c1997/meshes/box_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://c1997/meshes/box_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="box_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="box_link" />
+    <axis
+      xyz="0 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="lifting_link">
+    <inertial>
+      <origin
+        xyz="0.17383 0.0039882 0.28986"
+        rpy="0 0 0" />
+      <mass
+        value="4.4737" />
+      <inertia
+        ixx="0.05035"
+        ixy="-3.7408E-07"
+        ixz="-0.00011997"
+        iyy="0.050518"
+        iyz="-9.6114E-07"
+        izz="0.023585" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://c1997/meshes/lifting_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://c1997/meshes/lifting_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="lifting_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="box_link" />
+    <child
+      link="lifting_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

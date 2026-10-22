@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="scan_topic" default="/scan" />
+  <arg name="odom_topic" default="/odom" />
+  <arg name="base_frame" default="rslidar" />
+  <arg name="odom_frame" default="odom" />
+  <arg name="publish_tf" default="true" />
+  <arg name="frequency" default="10.0" />
+  <arg name="start_odometry" default="true" />
+
+  <group>
+    <remap from="/scan" to="$(arg scan_topic)" />
+    <include file="$(find pointcloud_to_laserscan)/launch/point_to_scan.launch" />
+  </group>
+
+  <node pkg="tf"
+        type="static_transform_publisher"
+        name="base_link_to_laser"
+        args="-0.23 0 -0.4 0.0 0.0 0.0 rslidar dummy_base_link 100" />
+
+  <node pkg="rf2o_laser_odometry"
+        if="$(arg start_odometry)"
+        type="rf2o_laser_odometry_node"
+        name="rf2o_laser_odometry"
+        output="screen">
+    <param name="laser_scan_topic" value="$(arg scan_topic)" />
+    <param name="odom_topic" value="$(arg odom_topic)" />
+    <param name="base_frame_id" value="$(arg base_frame)" />
+    <param name="odom_frame_id" value="$(arg odom_frame)" />
+    <param name="publish_tf" value="$(arg publish_tf)" />
+    <param name="init_pose_from_topic" value="" />
+    <param name="freq" value="$(arg frequency)" />
+    <!-- verbose=true floods the terminal at the odometry rate (3 lines per
+         cycle, ~10 Hz). Off by default for daily robot operation. -->
+    <param name="verbose" value="false" />
+  </node>
+</launch>

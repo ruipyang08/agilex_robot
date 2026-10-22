@@ -1,0 +1,25 @@
+schema_version: 1
+model: RSHELIOS_16P
+topic: /rslidar_points
+expected_frame: rslidar
+target_frame: base_link
+max_age_s: 0.35
+minimum_rate_hz: 8.0
+minimum_valid_points_per_cloud: 100
+sensor_range_max_m: 200.0
+footprint:
+  front_x_m: 0.50
+  rear_x_m: -0.50
+  left_y_m: 0.33
+  right_y_m: -0.33
+filter:
+  min_obstacle_z_m: -0.25
+  max_obstacle_z_m: 1.50
+  self_padding_m: 0.03
+  minimum_points_per_zone: 1
+static_clearance_m: 0.25
+latency:
+  sensor_s: 0.15
+  command_s: 0.25
+  brake_s: 0.10
+minimum_braking_deceleration_mps2: 0.25

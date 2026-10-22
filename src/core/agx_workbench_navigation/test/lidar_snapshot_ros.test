@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="agx_workbench_navigation" type="lidar_safety_monitor.py"
+        name="lidar_safety_monitor" output="screen" required="true">
+    <param name="config_file" value="$(find agx_workbench_navigation)/config/lidar_safety.yaml" />
+  </node>
+  <test test-name="lidar_snapshot" pkg="agx_workbench_navigation"
+        type="lidar_snapshot_ros.py" time-limit="40" />
+</launch>

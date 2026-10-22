@@ -1,0 +1,85 @@
+schema_version: 1
+control_rate_hz: 10.0
+identity:
+  requested_marker_id: 100
+  expected_frame: base_link
+controller:
+  yaw_tolerance_rad: 0.035
+  # Fits inside the 0.015 m final planar tolerance together with the reserved
+  # longitudinal verification-entry error.
+  lateral_tolerance_m: 0.010
+  # Once forward visual approach has started, require a materially larger
+  # error before returning to yaw/crab alignment so ALVAR jitter cannot cause
+  # repeated steering-mode changes and cumulative forward creep.
+  yaw_realign_threshold_rad: 0.070
+  lateral_realign_threshold_m: 0.020
+  visual_handoff_x_m: 2.05
+  # Switch to a stopped handoff before proportional visual approach becomes
+  # asymptotic at the nominal boundary.
+  visual_handoff_capture_tolerance_m: 0.02
+  visual_min_forward_m: 0.40
+  visual_max_forward_m: 2.20
+  # Contains the 0.15 m / 0.20 rad coarse-goal envelope at the 2.20 m
+  # visual range, with margin. ALIGN_YAW runs before lateral translation.
+  visual_max_abs_lateral_m: 0.65
+  visual_max_abs_yaw_rad: 0.60
+  max_blind_travel_m: 1.70
+  # Shared hardware/simulation final odometric cap. Directional LiDAR remains
+  # authoritative at every command tick.
+  max_blind_speed_mps: 0.20
+  # Shared hardware/simulation deadband floor. The rover otherwise stalls a
+  # few millimetres before verification while still publishing a tiny command.
+  min_blind_speed_mps: 0.01
+  max_blind_acceleration_mps2: 0.15
+  # Reconfirm stable stopped/aligned evidence before requesting forward-only
+  # docking. The measured steering gate independently holds wheel spin until
+  # all four steering joints converge, so this dwell does not estimate travel.
+  precommit_settle_dwell_s: 0.50
+  # A committed approach commands zero immediately on drift, then debounces
+  # perception noise before starting a bounded rollback.
+  visual_drift_dwell_s: 0.25
+  # Stop immediately on a missing/stale committed tag; reverse only if loss persists.
+  visual_tag_loss_dwell_s: 0.25
+  # A transient odometry transport gap commands exact zero. Persistent loss
+  # remains terminal after the same shared hardware/simulation dwell.
+  odometry_loss_dwell_s: 0.40
+  max_rollback_attempts: 2
+  rollback_completion_tolerance_m: 0.020
+  rollback_overrun_allowance_m: 0.050
+  max_rollback_travel_m: 2.0
+  max_rollback_speed_mps: 0.05
+  # Apply the same deterministic floor while returning to the visual
+  # checkpoint so a recovery cannot stall immediately outside its tolerance.
+  min_rollback_speed_mps: 0.01
+  max_rollback_acceleration_mps2: 0.10
+  rollback_timeout_s: 50.0
+  position_tolerance_m: 0.015
+  max_cross_track_m: 0.025
+  max_yaw_drift_rad: 0.035
+  handoff_settle_dwell_s: 0.50
+  handoff_evidence_max_age_s: 0.35
+  tag_reacquisition_timeout_s: 5.0
+  stop_dwell_s: 0.50
+  yaw_gain: 0.80
+  lateral_gain: 0.80
+  visual_forward_gain: 0.80
+  # Ranger/Isaac steering friction makes smaller in-place commands ineffective;
+  # retain acceleration limiting while clearing that measured deadband.
+  min_yaw_speed_radps: 0.05
+  max_yaw_speed_radps: 0.20
+  max_lateral_speed_mps: 0.08
+  # Shared hardware/simulation camera-visible forward profile.
+  max_visual_forward_speed_mps: 0.08
+  max_visual_linear_acceleration_mps2: 0.15
+  max_visual_angular_acceleration_radps2: 0.40
+  slowdown_distance_m: 0.25
+  nominal_control_period_s: 0.10
+  max_overshoot_m: 0.020
+  stop_linear_speed_mps: 0.020
+  stop_angular_speed_radps: 0.010
+  visual_phase_timeout_s: 5.0
+  visual_timeout_s: 15.0
+  max_visual_phase_transitions: 6
+  visual_transition_window_s: 3.0
+  blind_timeout_s: 45.0
+  verify_timeout_s: 5.0

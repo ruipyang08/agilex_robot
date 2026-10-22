@@ -1,0 +1,12 @@
+# Synthetic test input only; not a physical calibration.
+schema_version: 1
+kind: support_surface
+id: tableA
+station_id: stationA
+frame_id: link_base
+dimensions_xyz_m:
+- 0.9
+- 0.8
+- 0.08
+surface_height_above_floor_m: 0.985
+height_tolerance_m: 0.025

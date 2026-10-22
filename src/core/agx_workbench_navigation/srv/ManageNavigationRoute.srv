@@ -1,0 +1,10 @@
+# Pin before any departure; release after cancellation/completion.
+string invocation_id
+string route_id
+float64 task_deadline_s
+bool release
+# Request the owning server to verify a completed departure; never a clear flag.
+bool complete_departure
+---
+bool accepted
+string reason

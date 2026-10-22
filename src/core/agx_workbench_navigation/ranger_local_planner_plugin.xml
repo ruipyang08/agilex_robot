@@ -1,0 +1,12 @@
+<library path="lib/libranger_local_planner">
+  <class name="agx_workbench_navigation/RangerLocalPlanner"
+         type="agx_workbench_navigation::RangerLocalPlanner"
+         base_class_type="nav_core::BaseLocalPlanner">
+    <description>Radius-aware local planner for the Ranger workbench profile.</description>
+  </class>
+  <class name="agx_workbench_navigation/RangerGlobalPlanner"
+         type="agx_workbench_navigation::RangerGlobalPlanner"
+         base_class_type="nav_core::BaseGlobalPlanner">
+    <description>Presents and revalidates operation-bound admitted motion routes.</description>
+  </class>
+</library>

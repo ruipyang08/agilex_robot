@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""`put` -- put-point terminal command (temporary interface, 2026-10-14).
+
+Decision record: src/tasks/doc/decisions.md D22; taught points: measurements.md M6.
+
+Usage (on the robot):
+
+    put 3              put point 3 (green axis -75 mm)
+    put3               same; works after `put install` created the symlinks
+    put status         print the last put progress/result (latched topic)
+    put stop           same as /plane_target/stop (abort the running motion)
+    put install        link put and put1..put6 into ~/bin
+    put                this help
+
+One `put <n>` runs inside the plane_target_marker node's own thread
+(close the gripper to 200 -> approach point -> straight descent -> release
+-> straight lift -> back to initial). The service returns IMMEDIATELY, so
+this script subscribes to
+/plane_target/put_status and follows the progress until ok/fail; never treat
+"service returned success" as "the object is placed" (AGENTS.md async rule).
+
+Point numbers follow the measurements.md M6 table order:
+    1 centre / 2 green +75 mm / 3 green -75 mm /
+    4 centre, red -75 mm / 5 green +75 mm, red -75 mm /
+    6 green -75 mm, red -75 mm
+
+Prerequisites on the robot: setup_arm.launch with the plane_target_marker node
+(open_plane_target:=true) and a working gripper driver (open_gripper:=true);
+the arm starts from the initial pose with the object already gripped.
+Safety: this moves the real arm; clear the area, keep the physical e-stop in
+hand. `put stop` (or the console 急停) cancels the running action.
+"""
+
+import os
+import re
+import sys
+import threading
+import time
+
+PUT_SERVICE = "/plane_target/put"
+PUT_STATUS_TOPIC = "/plane_target/put_status"
+STOP_SERVICE = "/plane_target/stop"
+
+DEFAULT_TIMEOUT_S = 600.0
+SERVICE_WAIT_S = 3.0
+
+# Names only for help/echo text; the numbers live in measurements.md M6 and in
+# plane_target_marker.PUT_POINTS (that file is the single code copy).
+NAMES = {
+    1: "中心",
+    2: "绿轴 +75 mm",
+    3: "绿轴 -75 mm",
+    4: "中心，红轴 -75 mm",
+    5: "绿轴 +75 mm，红轴 -75 mm",
+    6: "绿轴 -75 mm，红轴 -75 mm",
+}
+
+USAGE = __doc__
+
+
+# ---------------------------------------------------------------------------
+# ROS environment bootstrap: usable from a shell that has NOT sourced ROS
+# (same promise as ~/bin/lift). If rospy cannot be imported, re-exec this same
+# file inside bash with the usual setup.bash files sourced.
+# ---------------------------------------------------------------------------
+def _setup_candidates():
+    cands = []
+    if os.environ.get("ROS_SETUP"):
+        cands.append(os.environ["ROS_SETUP"])
+    distro = os.environ.get("ROS_DISTRO", "noetic")
+    cands.append("/opt/ros/%s/setup.bash" % distro)
+    # walk up from this file: covers both the source tree
+    # (<ws>/src/tasks/agx_plane_target/scripts/put) and the installed copy
+    # (<ws>/devel/lib/agx_plane_target/put)
+    here = os.path.dirname(os.path.realpath(__file__))
+    node = here
+    for _ in range(8):
+        node = os.path.dirname(node)
+        if not node or node == "/":
+            break
+        if os.path.basename(node) == "devel":
+            cands.append(os.path.join(node, "setup.bash"))
+        else:
+            cands.append(os.path.join(node, "devel", "setup.bash"))
+    cands.append(os.path.expanduser("~/agilex_ws/devel/setup.bash"))
+    cands.append(os.path.expanduser(
+        "~/ranger_arm_deploy/agilex_ws/devel/setup.bash"))
+    seen, unique = set(), []
+    for c in cands:
+        if c and c not in seen:
+            seen.add(c)
+            unique.append(c)
+    return unique
+
+
+def _bootstrap_ros_env():
+    """Never returns on success: replaces the process with a sourced bash.
+
+    The original argv[0] travels along as bash's $0, so a `put3` symlink stays
+    `put3` after the re-exec (recovering it from PUT_CLI_PROG in main)."""
+    script = os.path.realpath(__file__)
+    sources = " ; ".join('. "%s" 2>/dev/null' % c for c in _setup_candidates())
+    command = ('export PUT_CLI_BOOTSTRAPPED=1; '
+               'export PUT_CLI_PROG="$(basename "$0")"; '
+               '%s; exec python3 "%s" "$@"' % (sources, script))
+    os.execvp("bash", ["bash", "-c", command, sys.argv[0]] + sys.argv[1:])
+
+
+def _need_rospy():
+    try:
+        import rospy
+        return rospy
+    except ImportError:
+        if os.environ.get("PUT_CLI_BOOTSTRAPPED") != "1":
+            _bootstrap_ros_env()   # replaces the process; does not return
+        print("put: 无法 import rospy。请先 source /opt/ros/noetic/setup.bash "
+              "和工作区的 devel/setup.bash（或用 `put install` 装到 ~/bin）。",
+              file=sys.stderr)
+        sys.exit(2)
+
+
+def _ros_node(rospy):
+    """init_node once per process; every subcommand that talks ROS needs it
+    (subscribing or calling a service without it raises ROSInitException)."""
+    if not rospy.core.is_initialized():
+        rospy.init_node("put_cli", anonymous=True)
+
+
+# ---------------------------------------------------------------------------
+# subcommands
+# ---------------------------------------------------------------------------
+class _StatusTracker(object):
+    """Collects /plane_target/put_status messages (latched: the last value
+    arrives right after subscribe). Only prints while armed, so a stale value
+    left over from an earlier put is not echoed as if it were news."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.state = ""
+        self.text = ""
+        self.done = threading.Event()
+        self.armed = False
+
+    def arm(self):
+        with self.lock:
+            self.state = ""
+            self.text = ""
+            self.done.clear()
+            self.armed = True
+
+    def cb(self, msg):
+        state, sep, text = msg.data.partition("|")
+        if not sep:
+            state, text = msg.data, ""
+        with self.lock:
+            changed = (state != self.state or text != self.text)
+            self.state, self.text = state, text
+            show = changed and self.armed
+        if show:
+            print("  [%s] %s" % (state, text))
+            sys.stdout.flush()
+        if state in ("ok", "fail"):
+            self.done.set()
+
+
+def _import_srv():
+    try:
+        from agx_plane_target.srv import PutPoint, PutPointRequest
+        return PutPoint, PutPointRequest
+    except ImportError:
+        print("put: 找不到 agx_plane_target/PutPoint 服务定义：工作区还没构建或"
+              "没 source。先 catkin_make 再 source devel/setup.bash。",
+              file=sys.stderr)
+        return None, None
+
+
+def cmd_put(point, timeout):
+    rospy = _need_rospy()
+    _ros_node(rospy)
+    from std_msgs.msg import String
+    PutPoint, PutPointRequest = _import_srv()
+    if PutPoint is None:
+        return 2
+
+    tracker = _StatusTracker()
+    rospy.Subscriber(PUT_STATUS_TOPIC, String, tracker.cb)  # latched
+    try:
+        rospy.wait_for_service(PUT_SERVICE, timeout=SERVICE_WAIT_S)
+    except rospy.ROSException:
+        print("put: 服务 %s 不在：plane_target_marker 节点没起？"
+              "（setup_arm.launch, open_plane_target:=true）" % PUT_SERVICE,
+              file=sys.stderr)
+        return 1
+
+    # give the latched status a moment to arrive BEFORE arming, so an old
+    # value is never mistaken for this run's progress
+    time.sleep(0.2)
+    proxy = rospy.ServiceProxy(PUT_SERVICE, PutPoint)
+    try:
+        resp = proxy(PutPointRequest(point=point))
+    except rospy.ServiceException as exc:
+        print("put: 调用 %s 失败：%s" % (PUT_SERVICE, exc), file=sys.stderr)
+        return 1
+    print("put: 放入点 %d（%s）" % (point, NAMES.get(point, "?")))
+    print("  %s" % resp.message)
+    if not resp.success:
+        return 1
+
+    tracker.arm()
+    deadline = time.monotonic() + timeout
+    while not tracker.done.is_set():
+        if rospy.is_shutdown() or time.monotonic() > deadline:
+            break
+        time.sleep(0.1)
+    with tracker.lock:
+        state = tracker.state
+    if tracker.done.is_set():
+        if state == "ok":
+            print("==> 放入完成")
+            return 0
+        print("==> 放入失败（见上面最后一条 [fail]，日志 /plane_target_marker）")
+        return 1
+    if rospy.is_shutdown():
+        print("已停止监视（Ctrl-C）：放入动作仍在节点里继续！"
+              "看进度用 `put status`，要停用 `put stop`。")
+        return 130
+    print("put: 等了 %.0f s 没等到最终状态；`put status` 或 "
+          "`rostopic echo -n1 %s` 再看" % (timeout, PUT_STATUS_TOPIC))
+    return 2
+
+
+def cmd_status():
+    rospy = _need_rospy()
+    _ros_node(rospy)
+    from std_msgs.msg import String
+    got = {"data": None, "event": threading.Event()}
+
+    def cb(msg):
+        got["data"] = msg.data
+        got["event"].set()
+
+    rospy.Subscriber(PUT_STATUS_TOPIC, String, cb)   # latched
+    got["event"].wait(3.0)
+    if got["data"] is None:
+        if _service_exists(rospy, PUT_SERVICE):
+            print("put: 节点在，但还没跑过放入（没有状态消息）")
+            return 0
+        print("put: 收不到 %s，服务 %s 也不在：plane_target_marker 没起？"
+              % (PUT_STATUS_TOPIC, PUT_SERVICE))
+        return 1
+    print(got["data"])
+    state = got["data"].split("|", 1)[0]
+    return 0 if state != "fail" else 1
+
+
+def cmd_stop():
+    rospy = _need_rospy()
+    _ros_node(rospy)
+    from std_srvs.srv import Trigger
+    try:
+        rospy.wait_for_service(STOP_SERVICE, timeout=SERVICE_WAIT_S)
+    except rospy.ROSException:
+        print("put: 服务 %s 不在：plane_target_marker 没起？" % STOP_SERVICE,
+              file=sys.stderr)
+        return 1
+    try:
+        resp = rospy.ServiceProxy(STOP_SERVICE, Trigger)()
+    except rospy.ServiceException as exc:
+        print("put: 调用 %s 失败：%s" % (STOP_SERVICE, exc), file=sys.stderr)
+        return 1
+    print("stop: %s" % resp.message)
+    return 0
+
+
+def cmd_install():
+    script = os.path.realpath(__file__)
+    # If invoked from the installed copy (<ws>/devel/lib/agx_plane_target/put),
+    # point the links at the source-tree script instead, so a `catkin clean`
+    # (which deletes devel/) cannot leave broken commands behind.
+    marker = os.sep + os.path.join("devel", "lib", "agx_plane_target") + os.sep
+    if marker in script:
+        ws = script.split(marker)[0]
+        src = os.path.join(ws, "src", "tasks", "agx_plane_target", "scripts",
+                           "put")
+        if os.path.isfile(src):
+            script = src
+    bindir = os.path.join(os.path.expanduser("~"), "bin")
+    try:
+        if not os.path.isdir(bindir):
+            os.makedirs(bindir)
+    except OSError as exc:
+        print("put install: 建不了 %s：%s" % (bindir, exc), file=sys.stderr)
+        return 1
+    names = ["put"] + ["put%d" % n for n in sorted(NAMES)]
+    for name in names:
+        link = os.path.join(bindir, name)
+        if os.path.lexists(link):
+            target = os.path.realpath(link)
+            if target == script:
+                print("  %-5s 已有 -> %s" % (name, script))
+            else:
+                print("  %-5s 已存在且指向 %s，跳过（要改先手工删除）"
+                      % (name, target))
+            continue
+        os.symlink(script, link)
+        print("  %-5s 新建 -> %s" % (name, script))
+    print("好了：$HOME/bin 在 PATH 里就能直接敲 put / put1..put6"
+          "（脚本自己会补 ROS 环境）。")
+    return 0
+
+
+def _service_exists(rospy, name):
+    try:
+        rospy.wait_for_service(name, timeout=SERVICE_WAIT_S)
+        return True
+    except rospy.ROSException:
+        return False
+
+
+def main(argv):
+    # PUT_CLI_PROG: invocation name preserved across the ROS-env re-exec, so a
+    # `put3` symlink still means point 3 after the bootstrap
+    prog = os.environ.get("PUT_CLI_PROG") or \
+        (os.path.basename(argv[0]) if argv else "put")
+    args = list(argv[1:])
+
+    # `put3` style invocation (symlink installed by `put install`)
+    match = re.match(r"^put([1-6])$", prog)
+    if match:
+        if args:
+            print("put: 命令名 %s 已经带了点号，不要再给参数" % prog,
+                  file=sys.stderr)
+            return 2
+        return _run_point(int(match.group(1)), None)
+
+    if not args or args[0] in ("help", "-h", "--help"):
+        print(USAGE)
+        return 0
+
+    cmd = args[0]
+    if cmd == "status":
+        return cmd_status()
+    if cmd == "stop":
+        return cmd_stop()
+    if cmd == "install":
+        return cmd_install()
+    if re.match(r"^put[1-6]$", cmd):        # `put put3` also accepted
+        cmd = cmd[3:]
+    if re.match(r"^[1-6]$", cmd):
+        timeout = None
+        if len(args) > 1:
+            try:
+                timeout = float(args[1])
+            except ValueError:
+                print("put: 超时参数要是秒数（整数/小数），收到 %r" % args[1],
+                      file=sys.stderr)
+                return 2
+        if len(args) > 2:
+            print("put: 参数太多：%s" % " ".join(args), file=sys.stderr)
+            return 2
+        return _run_point(int(cmd), timeout)
+    print("put: 不认识 %r" % cmd, file=sys.stderr)
+    print(USAGE)
+    return 2
+
+
+def _run_point(point, timeout):
+    return cmd_put(point, DEFAULT_TIMEOUT_S if timeout is None else timeout)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv))
+    except KeyboardInterrupt:
+        print("\nput: 被 Ctrl-C 打断（放入动作可能仍在继续，用 put status 看）")
+        sys.exit(130)

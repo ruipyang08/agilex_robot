@@ -1,0 +1,7 @@
+int32 id
+
+geometry_msgs/PoseStamped A_goal#this goal is pickup place
+
+geometry_msgs/PoseStamped B_goal#this goal is drop place
+---
+int32 result

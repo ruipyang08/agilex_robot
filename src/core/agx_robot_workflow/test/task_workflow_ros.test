@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="workbench_mission" pkg="agx_robot_workflow"
+        type="task_workflow_ros.py" time-limit="240" />
+</launch>

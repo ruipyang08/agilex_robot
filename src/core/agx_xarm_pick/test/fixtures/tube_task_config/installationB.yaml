@@ -1,0 +1,23 @@
+# Synthetic test input only; not a physical calibration.
+schema_version: 1
+kind: fixture_installation
+id: typeA_tableB
+fixture_profile: rack.yaml
+support_surface: tableB.yaml
+station_id: stationB
+parent_frame: link_base
+fixture_frame: rackB
+measured_transform:
+  translation_xyz_m:
+  - 0.15
+  - 0
+  - 0.2
+  quaternion_xyzw:
+  - 0
+  - 0
+  - 0
+  - 1
+registration:
+  required: false
+  maximum_translation_error_m: 0.08
+  maximum_yaw_error_rad: 0.5235987755982988

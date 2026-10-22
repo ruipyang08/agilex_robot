@@ -1,0 +1,120 @@
+# Schema example for the deterministic simulation course. The zero map
+# digests are commissioning placeholders and must be replaced by
+# register_workbench.py beside the selected saved map.
+schema_version: 1
+map:
+  id: workbench-map
+  yaml: workbench.yaml
+  image: workbench.pgm
+  yaml_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  image_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+camera_calibration:
+  identity_sha256: 008eedb6b901e937e89d16a23ce15f17ce3939ae4936a898e91e879413ef49b7
+  payload:
+    camera_info:
+      d: [0.0, 0.0, 0.0, 0.0, 0.0]
+      distortion_model: plumb_bob
+      height: 480
+      k:
+        [606.930969238281, 0.0, 330.799591064453,
+         0.0, 606.856811523438, 245.756958007812,
+         0.0, 0.0, 1.0]
+      p:
+        [606.930969238281, 0.0, 330.799591064453, 0.0,
+         0.0, 606.856811523438, 245.756958007812, 0.0,
+         0.0, 0.0, 1.0, 0.0]
+      r: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+      width: 640
+    camera_name: cam2
+    expected_optical_frame: cam2_color_optical_frame
+    model: Intel RealSense D435
+    mount:
+      date: '2026-08-19'
+      parent_frame: base_link
+      residual_evidence: null
+      rpy_rad: [0.0, 0.52359878, 0.0]
+      source: vendor ROS1 baseline b7866893 ranger_xarm_2431.xacro aperture translation
+      source_sha256: 2a79e71117173e034695fba0729606263da8bce930a999f59923120a586cdf30
+      state: vendor_nominal
+      xyz_m: [0.349, 0.0, 0.197]
+    profile: {fps: 30.0, height: 480, width: 640}
+    serial_no: "348522075124"
+parking_geometry:
+  identity_sha256: 13c92b6ee1218ad0abcab7cafd2ce6a1cc6018f21f4407e87e931ee55c6ad618
+  payload:
+    absolute_max_blind_travel_m: 1.75
+    front_reference:
+      frame: base_link
+      source: deterministic workbench simulation course
+      state: simulation_only
+      x_m: 0.36
+    max_blind_travel_m: 1.70
+    parking_safety_distance_m: 0.0
+lidar_safety:
+  profile_identity_sha256: e514abbc946974bc46663164a33b2e83980763d6d1a8fd077b533b67fc059d57
+  envelope_identity_sha256: 2b12bb752baa73c946563c8b8118e04b0587fd49aa60fbc19431d2dfd42c72dc
+  raw_configuration_sha256: 1a2f9393ff2cbff96560a3cdd573d06dcd2007c51c1a807ac5ecb6d5b92a0791
+  payload:
+    envelope:
+      filter:
+        max_obstacle_z_m: 1.50
+        min_obstacle_z_m: -0.25
+        minimum_points_per_zone: 1
+        self_padding_m: 0.03
+      footprint:
+        front_x_m: 0.50
+        left_y_m: 0.33
+        rear_x_m: -0.50
+        right_y_m: -0.33
+      latency: {brake_s: 0.10, command_s: 0.10, sensor_s: 0.15}
+      minimum_braking_deceleration_mps2: 0.25
+      raw_configuration_sha256: 1a2f9393ff2cbff96560a3cdd573d06dcd2007c51c1a807ac5ecb6d5b92a0791
+      static_clearance_m: 0.25
+    profile:
+      expected_frame: rslidar
+      max_age_s: 0.25
+      minimum_rate_hz: 8.0
+      minimum_valid_points_per_cloud: 100
+      model: RSHELIOS_16P
+      raw_configuration_sha256: 1a2f9393ff2cbff96560a3cdd573d06dcd2007c51c1a807ac5ecb6d5b92a0791
+      sensor_range_max_m: 200.0
+      target_frame: base_link
+      topic: /rslidar_points
+workbenches:
+  - id: wb-100
+    marker:
+      family: ALVAR
+      id: 100
+      size_m: 0.18
+      artifact_sha256: 27becb5a03fc03fa5602c9fb69604bdb4d7c6778269f2a7cfbcaf7d3b3cdf139
+    map_pose:
+      frame: map
+      position_m: [0.0, 3.95, 0.010]
+      orientation_xyzw: [0.0, 0.0, 0.7071067811865475, 0.7071067811865476]
+    staging_pose:
+      frame: map
+      position_m: [0.0, 1.95, 0.0]
+      orientation_xyzw: [0.0, 0.0, 0.7071067811865475, 0.7071067811865476]
+    docking_offset: {lateral_m: 0.0, yaw_rad: 0.0}
+    parking_geometry:
+      absolute_max_blind_travel_m: 1.75
+      front_reference:
+        frame: base_link
+        source: deterministic workbench simulation course
+        state: simulation_only
+        x_m: 0.36
+      max_blind_travel_m: 1.70
+      parking_safety_distance_m: 0.0
+      identity_sha256: 13c92b6ee1218ad0abcab7cafd2ce6a1cc6018f21f4407e87e931ee55c6ad618
+    lidar_safety:
+      profile_identity_sha256: e514abbc946974bc46663164a33b2e83980763d6d1a8fd077b533b67fc059d57
+      envelope_identity_sha256: 2b12bb752baa73c946563c8b8118e04b0587fd49aa60fbc19431d2dfd42c72dc
+    expected_camera_frame: cam2_color_optical_frame
+    registration:
+      sample_count: 12
+      base_pose_count: 3
+      residuals:
+        translation_m: {p50: 0.0, p95: 0.0, max: 0.0}
+        floor_normal_rad: {p50: 0.0, p95: 0.0, max: 0.0}
+        yaw_rad: {p50: 0.0, p95: 0.0, max: 0.0}
+      created_at: replace-during-commissioning

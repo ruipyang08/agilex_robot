@@ -1,0 +1,5 @@
+<launch>
+  <!-- Isolated rostest master only. No robot, simulator, navigation or grasp nodes. -->
+  <test test-name="task_extension_ros" pkg="agx_robot_workflow"
+        type="workflow_task_extension_ros_test" time-limit="30" />
+</launch>
