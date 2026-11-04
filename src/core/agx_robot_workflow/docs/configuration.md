@@ -72,7 +72,13 @@ tasks:
 Use the [example guide](../../agx_task_workflow/examples/record_value/README.md) to run it without a
 simulator. It rejects `config`; it needs no navigation or grasp configuration.
 The standalone example admits only its own registered type. The production host
-also registers `navigate` and `grasp_test_tube`.
+also registers `navigate`, `grasp_test_tube` and `place_test_tube`.
+
+`place_test_tube` is registered but cannot move the arm yet: the onboard placement
+motion adapter is deliberately unimplemented until arm reach to the onboard rack
+is measured, and its rack profile is installed only through the private
+parameters `onboard_rack_profile` (YAML path) and `onboard_rack_id` (profile id),
+which must be set together.
 
 A navigation-only recipe using the installed destination input is:
 

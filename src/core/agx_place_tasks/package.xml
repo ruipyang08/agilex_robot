@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>agx_place_tasks</name><version>0.1.0</version>
+  <description>Reusable placement task for the onboard test-tube rack, addressed by configured poses.</description>
+  <maintainer email="devnull@example.com">ranger_arm maintainers</maintainer><license>MIT</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>agx_task_workflow</depend>
+  <depend>agx_robot_task_runtime</depend>
+  <depend>roscpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>moveit_core</depend>
+  <depend>moveit_msgs</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>dh_gripper_msgs</depend>
+  <depend>yaml-cpp</depend>
+</package>

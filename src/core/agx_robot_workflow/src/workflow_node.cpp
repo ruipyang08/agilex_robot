@@ -2,6 +2,8 @@
 #include "agx_robot_task_runtime/task_metadata.hpp"
 #include "agx_navigation_tasks/navigate_task.hpp"
 #include "agx_tube_tasks/grasp_test_tube_task.hpp"
+#include "agx_place_tasks/place_task.hpp"
+#include "agx_place_tasks/place_motion.hpp"
 #include "agx_robot_task_runtime/base_guard.hpp"
 #include "agx_task_workflow/execution_context.hpp"
 #include "agx_task_workflow/task_runtime_ports.hpp"
@@ -230,6 +232,30 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     tube_ports.begin=[this](const auto& request){BeginGrasp(request);};
     tube_ports.continuation_check=nav_ports.continuation_check;
     agx_tube_tasks::RegisterTubeTasks(registry,tubes,tube_ports);
+    agx_place_tasks::PlaceInstallation place;
+    std::string rack_path,rack_id;
+    private_node.param<std::string>("onboard_rack_profile",rack_path,"");
+    private_node.param<std::string>("onboard_rack_id",rack_id,"");
+    if(rack_path.empty()!=rack_id.empty())
+      throw std::invalid_argument("onboard_rack_profile and onboard_rack_id must be set together");
+    if(!rack_path.empty()) {
+      place.rack=std::make_shared<const agx_place_tasks::OnboardRackProfile>(
+          agx_place_tasks::LoadRackProfile(rack_path,rack_id));
+      onboard_rack_profile_=place.rack;
+      onboard_rack_installed_=true;
+    }
+    private_node.param<double>("place_velocity_scaling",place_motion_.velocity_scaling,place_motion_.velocity_scaling);
+    private_node.param<double>("place_acceleration_scaling",place_motion_.acceleration_scaling,place_motion_.acceleration_scaling);
+    private_node.param<double>("place_eef_step_m",place_motion_.eef_step_m,place_motion_.eef_step_m);
+    private_node.param<double>("place_gripper_force",place_motion_.gripper_force,place_motion_.gripper_force);
+    private_node.param<double>("place_gripper_speed",place_motion_.gripper_speed,place_motion_.gripper_speed);
+    agx_place_tasks::PlaceTaskPorts place_ports;
+    place_ports.place=[this](const auto& request){return Place(request);};
+    place_ports.cancelled=nav_ports.cancelled;
+    place_ports.entry_check=[this]{return PlaceEntryCheck();};
+    place_ports.stop=nav_ports.stop;place_ports.cleanup=nav_ports.cleanup;
+    place_ports.continuation_check=nav_ports.continuation_check;
+    agx_place_tasks::RegisterPlaceTasks(registry,place,place_ports);
   }
   void AdmitRecipe(const agx_task_workflow::PreparedRecipe& recipe) {
     admitted_travel_.clear();admitted_configs_.clear();envelopes_.clear();
@@ -462,6 +488,24 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     ports.runtime_failure=[this]{return RuntimeFailure();};
     return agx_tube_tasks::ExecuteGrasp(request,ports);
   }
+  agx_task_workflow::StepResult Place(const agx_place_tasks::PlaceParameters& request) {
+    if(!state_)return {false,"place requires the robot state store"};
+    agx_place_tasks::PlaceExecutionPorts ports;
+    ports.state=state_;
+    ports.run_id=run_id_;
+    ports.task_id=active_task_id_;
+    ports.held_base=[this]{return BaseReady(true) && GraspMayContinue();};
+    ports.refresh_custody=[this]{RefreshCustody();};
+    // Every move is bounded and cancellable through the same stop path as the
+    // grasp mission; the motion itself never blocks past a stop request.
+    ports.run=[this](const agx_place_tasks::PlaceParameters& parameters) {
+      return agx_place_tasks::RunPlaceMotion(*parameters.rack,parameters.slot,place_motion_,
+          [this]{return Cancelled() || RuntimeFailure()!=agx_task_workflow::FailureKind::None;});
+    };
+    ports.runtime_failure=[this]{return RuntimeFailure();};
+    ports.stop_reason=[this]{std::lock_guard<std::mutex> lock(guard_mutex_);return grasp_stop_reason_;};
+    return agx_place_tasks::ExecutePlace(request,ports);
+  }
   agx_task_workflow::FailureKind RuntimeFailure() const {
     if(context_) {
       const auto cause=context_->Check();
@@ -523,6 +567,10 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     return {false,"navigation entry interfaces did not become ready within the startup bound"};
   }
   agx_task_workflow::StepResult GraspEntryCheck() {
+    return {BaseReady(true) && GraspMayContinue(),"measured held-base entry guard"};
+  }
+  agx_task_workflow::StepResult PlaceEntryCheck() {
+    if(!onboard_rack_installed_)return {false,"no measured onboard rack profile is installed"};
     return {BaseReady(true) && GraspMayContinue(),"measured held-base entry guard"};
   }
   agx_task_workflow::StepResult StopTask(double timeout_s) {
@@ -1547,6 +1595,9 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
   agx_navigation_tasks::TravelMode travel_mode_=agx_navigation_tasks::TravelMode::Hardware;
   std::map<std::string,std::shared_ptr<const agx_navigation_tasks::TravelProfile>> admitted_travel_;
   bool robot_work_started_=false;
+  bool onboard_rack_installed_=false;
+  std::shared_ptr<const agx_place_tasks::OnboardRackProfile> onboard_rack_profile_;
+  agx_place_tasks::PlaceMotionConfig place_motion_;
   std::shared_ptr<const agx_navigation_tasks::TravelProfile> active_profile_;
   std::shared_ptr<agx_navigation_tasks::TravelEnvelopeAdmission> active_envelope_;
   std::map<std::string,std::shared_ptr<agx_navigation_tasks::TravelEnvelopeAdmission>> envelopes_;

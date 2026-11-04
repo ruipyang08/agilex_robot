@@ -27,7 +27,8 @@ Start with these source-local guides:
 - [Measured custody, object references and result metadata](docs/robot_state.md)
 - [Execution, cancellation, stopping and continuation](docs/execution.md)
 - [Travel posture, path verification and effective control envelope](docs/travel_preparation.md)
-- Concrete tasks: [navigate](docs/tasks/navigate.md) and [grasp_test_tube](docs/tasks/grasp_test_tube.md)
+- Concrete tasks: [navigate](docs/tasks/navigate.md), [grasp_test_tube](docs/tasks/grasp_test_tube.md)
+  and `place_test_tube` ([configuration and known gaps](../agx_place_tasks/docs/configuration.md))
 
 This package exports an executable, launch files and recipes, with no task
 library or public C++ headers. Consumers register the selected peer modules

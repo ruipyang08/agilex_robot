@@ -1,0 +1,62 @@
+# Measured geometry of the rack mounted on the robot itself.
+#
+# Source of the numbers: agilex_ws/src/tasks/doc/measurements.md, section M6
+# "六个放入点与上方接近点" (2026-10-14, tip tcp_link, frame link_base_lift0).
+# The same six points are the single code copy in
+# agx_plane_target/scripts/plane_target_marker.py (PUT_POINTS). Re-teach in M6
+# first, then update both files - never edit one of them alone.
+#
+# This rack does not move relative to the arm, so it is addressed by these
+# taught poses. Recognition and visual alignment are deliberately NOT used
+# here; they exist for the external rack, whose pose changes with every stop.
+schema_version: 2
+
+onboard_rack_profiles:
+  onboard_rack_v1:
+    # Frame the taught centres are expressed in.
+    parent_frame: link_base_lift0
+    # Link the centre coordinates refer to. M6 recorded them for tcp_link,
+    # which sits 0.170 m below link6; planning to link6 instead would ask the
+    # arm for a pose 0.170 m further out and land in the wrist singularity.
+    tip_link: tcp_link
+    # Tool orientation recorded with the points: RPY (sxyz, degrees). The tool
+    # +Z axis points along link_base_lift0 -Z, so this is a vertical approach.
+    tool_rpy_deg: [180.00, 0.00, 1.32]
+    # Unit vector the closed fingers travel along while lowering a tube.
+    descend_axis: [0.0, 0.0, -1.0]
+    # Approach point = centre + 0.150 m along -descend_axis (straight up).
+    # NOTE: the M6 prose still says "100 mm"; the value actually executed on the
+    # robot is PUT_APPROACH_RISE = 0.150 m, which is what is recorded here.
+    approach_rise_m: 0.150
+    # The taught layout is a 3 x 2 grid (75 mm pitch on both axes), not a line,
+    # so every slot carries its own measured centre. Numbers are metres.
+    slots:
+      1:
+        name: green-axis -75 mm
+        center_m: [0.327302, 0.082902, -0.078002]
+      2:
+        name: centre
+        center_m: [0.329030, 0.007922, -0.078002]
+      3:
+        name: green-axis +75 mm
+        center_m: [0.330758, -0.067058, -0.078002]
+      4:
+        name: green-axis -75 mm, red-axis -75 mm
+        center_m: [0.252322, 0.081174, -0.078003]
+      5:
+        name: centre, red-axis -75 mm
+        center_m: [0.254050, 0.006194, -0.078003]
+      6:
+        name: green-axis +75 mm, red-axis -75 mm
+        center_m: [0.255778, -0.068786, -0.078003]
+    # The taught attitude (yaw 1.32 deg) lets the AG95 fingers sweep an
+    # adjacent cap on the 75 mm grid. On 2026-11-04 a slow descent with the
+    # taught attitude touched the neighbouring cap, so the descent is now
+    # rotated 45 deg about the tool axis to pass between the caps on the
+    # diagonal. Re-check this value whenever the rack or the gripper changes.
+    tool_yaw_offset_deg: 45.0
+    # Not measured: no repeatability study exists for these six points, so the
+    # field stays absent rather than carrying a guessed number.
+    # slot_tolerance_m: ...
+    qualified: true
+    evidence_id: measurements.md M6 2026-10-14 link_base_lift0 tcp_link

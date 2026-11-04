@@ -11,6 +11,7 @@ inline const agx_task_workflow::TaskResource Camera = "robot.camera";
 namespace requirements {
 inline const agx_task_workflow::StateRequirementKind HeldArrival = "robot.held_arrival";
 inline const agx_task_workflow::StateRequirementKind GripperEmpty = "robot.gripper_empty";
+inline const agx_task_workflow::StateRequirementKind GripperHolding = "robot.gripper_holding";
 inline const agx_task_workflow::StateRequirementKind SupportedTransport = "robot.supported_transport";
 inline const agx_task_workflow::StateRequirementKind SafeClearance = "robot.safe_clearance";
 inline const agx_task_workflow::StateRequirementKind StationCapability = "robot.station_capability";
@@ -21,5 +22,7 @@ inline const agx_task_workflow::ExpectedEffectKind HeldArrival = "robot.held_arr
 inline const agx_task_workflow::ExpectedEffectKind GripperHolding = "robot.gripper_holding";
 inline const agx_task_workflow::ExpectedEffectKind GripperEmpty = "robot.gripper_empty";
 inline const agx_task_workflow::ExpectedEffectKind TransportReady = "robot.transport_ready";
+// Custody of one object at an exact fixture slot, established by measurement.
+inline const agx_task_workflow::ExpectedEffectKind ObjectAtHolder = "robot.object_at_holder";
 }
 }

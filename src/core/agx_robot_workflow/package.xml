@@ -5,6 +5,7 @@
   <maintainer email="devnull@example.com">ranger_arm maintainers</maintainer><license>MIT</license>
   <buildtool_depend>catkin</buildtool_depend>
   <depend>agx_navigation_tasks</depend><depend>agx_tube_tasks</depend>
+  <depend>agx_place_tasks</depend>
   <depend>agx_task_workflow</depend><depend>agx_robot_task_runtime</depend>
   <depend>roscpp</depend><depend>std_msgs</depend><depend>std_srvs</depend>
   <depend>nav_msgs</depend><depend>sensor_msgs</depend><depend>geometry_msgs</depend><depend>actionlib</depend>

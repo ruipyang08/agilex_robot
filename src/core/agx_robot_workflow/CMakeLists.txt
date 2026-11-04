@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(agx_robot_workflow)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(catkin REQUIRED COMPONENTS agx_navigation_tasks agx_tube_tasks agx_task_workflow agx_robot_task_runtime roscpp std_msgs std_srvs nav_msgs sensor_msgs geometry_msgs actionlib actionlib_msgs move_base_msgs agx_workbench_navigation agx_xarm_pick moveit_core moveit_msgs moveit_ros_planning_interface geometric_shapes bt_task_msgs dh_gripper_msgs)
+find_package(catkin REQUIRED COMPONENTS agx_navigation_tasks agx_tube_tasks agx_place_tasks agx_task_workflow agx_robot_task_runtime roscpp std_msgs std_srvs nav_msgs sensor_msgs geometry_msgs actionlib actionlib_msgs move_base_msgs agx_workbench_navigation agx_xarm_pick moveit_core moveit_msgs moveit_ros_planning_interface geometric_shapes bt_task_msgs dh_gripper_msgs)
 find_package(yaml-cpp REQUIRED)
 find_package(Threads REQUIRED)
 # This package is an application, not a second task API. Consumers depend on
