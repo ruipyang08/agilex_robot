@@ -4,6 +4,8 @@
 #include "agx_tube_tasks/grasp_test_tube_task.hpp"
 #include "agx_place_tasks/place_task.hpp"
 #include "agx_place_tasks/place_motion.hpp"
+#include "agx_place_tasks/pick_task.hpp"
+#include "agx_place_tasks/pick_execution.hpp"
 #include "agx_robot_task_runtime/base_guard.hpp"
 #include "agx_task_workflow/execution_context.hpp"
 #include "agx_task_workflow/task_runtime_ports.hpp"
@@ -256,6 +258,13 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     place_ports.stop=nav_ports.stop;place_ports.cleanup=nav_ports.cleanup;
     place_ports.continuation_check=nav_ports.continuation_check;
     agx_place_tasks::RegisterPlaceTasks(registry,place,place_ports);
+    agx_place_tasks::PickTaskPorts pick_ports;
+    pick_ports.pick=[this](const auto& request){return Pick(request);};
+    pick_ports.cancelled=nav_ports.cancelled;
+    pick_ports.entry_check=[this]{return PickEntryCheck();};
+    pick_ports.stop=nav_ports.stop;pick_ports.cleanup=nav_ports.cleanup;
+    pick_ports.continuation_check=nav_ports.continuation_check;
+    agx_place_tasks::RegisterPickTasks(registry,place,pick_ports);
   }
   void AdmitRecipe(const agx_task_workflow::PreparedRecipe& recipe) {
     admitted_travel_.clear();admitted_configs_.clear();envelopes_.clear();
@@ -488,6 +497,30 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     ports.runtime_failure=[this]{return RuntimeFailure();};
     return agx_tube_tasks::ExecuteGrasp(request,ports);
   }
+  agx_task_workflow::StepResult Pick(const agx_place_tasks::PickParameters& request) {
+    if(!state_)return {false,"pick requires the robot state store"};
+    agx_place_tasks::PickExecutionPorts ports;
+    ports.state=state_;
+    ports.run_id=run_id_;
+    ports.task_id=active_task_id_;
+    ports.held_base=[this]{return BaseReady(true) && GraspMayContinue();};
+    ports.refresh_custody=[this]{RefreshCustody();};
+    ports.run=[this](const agx_place_tasks::PickParameters& parameters) {
+      const auto motion=agx_place_tasks::RunPickMotion(*parameters.rack,parameters.slot,place_motion_,
+          [this]{return Cancelled() || RuntimeFailure()!=agx_task_workflow::FailureKind::None;});
+      agx_place_tasks::PickMeasurement measurement;
+      measurement.grasped=motion.grasped;
+      measurement.grasp_uncertain=motion.grasp_uncertain;
+      measurement.worker_joined=motion.worker_joined;
+      measurement.measured_stop_confirmed=motion.measured_stop_confirmed;
+      measurement.detail=motion.detail;
+      measurement.evidence=motion.evidence;
+      return measurement;
+    };
+    ports.runtime_failure=[this]{return RuntimeFailure();};
+    ports.stop_reason=[this]{std::lock_guard<std::mutex> lock(guard_mutex_);return grasp_stop_reason_;};
+    return agx_place_tasks::ExecutePick(request,ports);
+  }
   agx_task_workflow::StepResult Place(const agx_place_tasks::PlaceParameters& request) {
     if(!state_)return {false,"place requires the robot state store"};
     agx_place_tasks::PlaceExecutionPorts ports;
@@ -570,6 +603,10 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     return {BaseReady(true) && GraspMayContinue(),"measured held-base entry guard"};
   }
   agx_task_workflow::StepResult PlaceEntryCheck() {
+    if(!onboard_rack_installed_)return {false,"no measured onboard rack profile is installed"};
+    return {BaseReady(true) && GraspMayContinue(),"measured held-base entry guard"};
+  }
+  agx_task_workflow::StepResult PickEntryCheck() {
     if(!onboard_rack_installed_)return {false,"no measured onboard rack profile is installed"};
     return {BaseReady(true) && GraspMayContinue(),"measured held-base entry guard"};
   }

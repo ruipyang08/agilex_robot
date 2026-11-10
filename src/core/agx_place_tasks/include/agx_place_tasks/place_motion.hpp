@@ -69,6 +69,7 @@ struct PickMotionOutcome {
   bool measured_stop_confirmed = false;
   bool worker_joined = false;
   std::string detail;
+  PlaceEvidence evidence;
 };
 
 // approach -> narrow -> straight descent -> close and measure -> straight retreat.

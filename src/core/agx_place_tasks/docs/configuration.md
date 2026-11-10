@@ -107,6 +107,30 @@ onboard_rack_profiles:
 也就是说：**没有传感器证明“管在槽里”，本任务不会声称成功**。
 `robot.gripper_empty` 由夹爪状态自身的观测给出，不由本任务声明。
 
+## 5.2 从机载架取管（pick_from_onboard）
+
+`place_test_tube` 的逆操作：把某个已示教槽位里的管取到夹爪里。
+配方里它和 `place_test_tube` 共用同一份 profile：
+
+```yaml
+tasks:
+  - {id: take,  type: pick_from_onboard, slot: 3}   # 取出来，握在手里
+  - {id: put,   type: place_test_tube,   slot: 5}   # 放到另一个槽位
+```
+
+| 项 | 内容 |
+|---|---|
+| 输入 | `slot`（必须是已示教的槽位） |
+| 入口要求 | 实测夹爪为空 + 已到站 + base hold + 合格 profile |
+| 效果 | `robot.gripper_holding`（只在实测夹到东西时产生） |
+| 失败 | 空槽 / 没夹到 → 不产生任何效果；夹到但没停稳 → UnconfirmedStop |
+
+动作和放置对称：接近 → 收窄两指 → 笛卡尔直线下降 → 闭合到 200 → **看实测停在哪个位置**
+（停在 >80 表示夹到了，闭合到 ≈0 表示空槽）→ 直线退回 → 停稳。
+
+取管之后 `plan.payload_may_be_retained` 变为 true，正好是 `place_test_tube` 的入口条件，
+所以 `pick` → `place` 可以直接串在同一个配方里。
+
 ## 6. 已知缺口（不要当成已完成）
 
 1. **动作已实现，但没有槽位占用传感器**（流程见第 7 节）：

@@ -422,6 +422,12 @@ PickMotionOutcome RunPickMotion(const OnboardRackProfile& rack, std::size_t slot
       outcome.grasped = true;
       outcome.detail = "fingers stopped at " + std::to_string(closed) + " on an object";
     }
+    dh_gripper_msgs::GripperState measured_state;
+    if (ReadGripperState(config, 0.5, &measured_state, stop_requested)) {
+      outcome.evidence.source = "measured-gripper";
+      outcome.evidence.source_stamp_s = measured_state.header.stamp.toSec();
+      outcome.evidence.receipt_steady_s = SteadyNow();
+    }
 
     // Always leave the slot: a closed gripper still inside the rack drags the
     // next tube on the way out.
