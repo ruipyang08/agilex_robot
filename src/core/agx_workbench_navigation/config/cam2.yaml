@@ -4,6 +4,20 @@ model: Intel RealSense D435
 serial_no: "348522075124"
 firmware_observed: "5.15.1.55"
 profile: {width: 640, height: 480, fps: 30}
+# Recorded device calibration. Same serial_no as the entry in
+# workbench_registry.example.yaml, which is where these numbers come from.
+camera_info:
+  width: 640
+  height: 480
+  distortion_model: plumb_bob
+  d: [0.0, 0.0, 0.0, 0.0, 0.0]
+  k: [606.930969238281, 0.0, 330.799591064453,
+      0.0, 606.856811523438, 245.756958007812,
+      0.0, 0.0, 1.0]
+  r: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  p: [606.930969238281, 0.0, 330.799591064453, 0.0,
+      0.0, 606.856811523438, 245.756958007812, 0.0,
+      0.0, 0.0, 1.0, 0.0]
 topics:
   color_image: /cam2/color/image_raw
   color_info: /cam2/color/camera_info

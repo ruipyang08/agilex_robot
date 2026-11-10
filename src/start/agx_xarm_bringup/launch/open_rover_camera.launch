@@ -13,5 +13,7 @@
     <arg name="enable_depth" value="$(arg enable_depth)" />
     <arg name="enable_sync" value="$(arg enable_sync)" />
     <arg name="align_depth" value="$(arg align_depth)" />
+    <!-- Detection belongs to agx_workbench_navigation/cam2_perception.launch. -->
+    <arg name="start_ar_detector" value="false" />
   </include>
 </launch>
