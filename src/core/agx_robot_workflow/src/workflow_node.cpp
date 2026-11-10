@@ -6,6 +6,8 @@
 #include "agx_place_tasks/place_motion.hpp"
 #include "agx_place_tasks/pick_task.hpp"
 #include "agx_place_tasks/pick_execution.hpp"
+#include "agx_place_tasks/onboard_positions.hpp"
+#include "agx_place_tasks/place_pose.hpp"
 #include "agx_robot_task_runtime/base_guard.hpp"
 #include "agx_task_workflow/execution_context.hpp"
 #include "agx_task_workflow/task_runtime_ports.hpp"
@@ -258,7 +260,19 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     place_ports.stop=nav_ports.stop;place_ports.cleanup=nav_ports.cleanup;
     place_ports.continuation_check=nav_ports.continuation_check;
     agx_place_tasks::RegisterPlaceTasks(registry,place,place_ports);
+    std::string positions_path;
+    private_node.param<std::string>("onboard_positions",positions_path,std::string());
+    if(!positions_path.empty()){
+      try{
+        measured_positions_=std::make_shared<const agx_place_tasks::PositionTable>(
+            agx_place_tasks::LoadPositions(positions_path));
+      }catch(const std::exception& error){
+        ROS_FATAL("onboard position table '%s' is unusable: %s",positions_path.c_str(),error.what());
+        std::exit(1);
+      }
+    }
     agx_place_tasks::PickTaskPorts pick_ports;
+    pick_ports.positions=measured_positions_;
     pick_ports.pick=[this](const auto& request){return Pick(request);};
     pick_ports.cancelled=nav_ports.cancelled;
     pick_ports.entry_check=[this]{return PickEntryCheck();};
@@ -506,8 +520,33 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     ports.held_base=[this]{return BaseReady(true) && GraspMayContinue();};
     ports.refresh_custody=[this]{RefreshCustody();};
     ports.run=[this](const agx_place_tasks::PickParameters& parameters) {
-      const auto motion=agx_place_tasks::RunPickMotion(*parameters.rack,parameters.slot,place_motion_,
-          [this]{return Cancelled() || RuntimeFailure()!=agx_task_workflow::FailureKind::None;});
+      const auto stop=[this]{return Cancelled() || RuntimeFailure()!=agx_task_workflow::FailureKind::None;};
+      agx_place_tasks::PickMotionOutcome motion;
+      if(parameters.uses_measured_position&&parameters.measured){
+        agx_place_tasks::PlaceMotionConfig config=place_motion_;
+        if(measured_positions_){
+          config.velocity_scaling=measured_positions_->velocity_scaling;
+          config.acceleration_scaling=measured_positions_->acceleration_scaling;
+          config.eef_step_m=measured_positions_->eef_step_m;
+          config.gripper_open_position=measured_positions_->open_before_descent;
+          config.grasp_close_position=measured_positions_->close_on_cap;
+          config.gripper_force=measured_positions_->gripper_force;
+          config.gripper_speed=measured_positions_->gripper_speed;
+          // The measured rows were taught with these heights; keep them exact.
+          config.descent_open_position=measured_positions_->open_before_descent;
+        }
+        agx_place_tasks::PickTarget target;
+        target.frame=parameters.measured_frame;
+        target.tip_link=parameters.rack?parameters.rack->tip_link:std::string("tcp_link");
+        target.approach_m={parameters.measured->x,parameters.measured->y,parameters.measured->approach_z};
+        target.grasp_m={parameters.measured->x,parameters.measured->y,parameters.measured->grasp_z};
+        target.orientation_xyzw=agx_place_tasks::QuaternionFromRpyDeg(parameters.measured_rpy_deg);
+        target.orientation_xyzw=agx_place_tasks::RotateAboutToolZ(
+            target.orientation_xyzw,parameters.measured_yaw_offset_deg*M_PI/180.0);
+        motion=agx_place_tasks::RunPickMotionAt(target,config,stop);
+      }else{
+        motion=agx_place_tasks::RunPickMotion(*parameters.rack,parameters.slot,place_motion_,stop);
+      }
       agx_place_tasks::PickMeasurement measurement;
       measurement.grasped=motion.grasped;
       measurement.grasp_uncertain=motion.grasp_uncertain;
@@ -1634,6 +1673,7 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
   bool robot_work_started_=false;
   bool onboard_rack_installed_=false;
   std::shared_ptr<const agx_place_tasks::OnboardRackProfile> onboard_rack_profile_;
+  std::shared_ptr<const agx_place_tasks::PositionTable> measured_positions_;
   agx_place_tasks::PlaceMotionConfig place_motion_;
   std::shared_ptr<const agx_navigation_tasks::TravelProfile> active_profile_;
   std::shared_ptr<agx_navigation_tasks::TravelEnvelopeAdmission> active_envelope_;

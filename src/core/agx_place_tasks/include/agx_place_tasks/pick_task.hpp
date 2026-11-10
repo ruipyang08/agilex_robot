@@ -1,10 +1,13 @@
 #pragma once
 
+#include <array>
 #include <functional>
+#include <optional>
 #include <memory>
 #include <string>
 
 #include "agx_place_tasks/onboard_rack_profile.hpp"
+#include "agx_place_tasks/onboard_positions.hpp"
 #include "agx_place_tasks/place_task.hpp"  // shares PlaceInstallation
 #include "agx_task_workflow/task_registry.hpp"
 
@@ -14,9 +17,17 @@ struct PickParameters {
   std::size_t slot = 0;
   // Immutable snapshot taken at preparation; never re-read during execution.
   std::shared_ptr<const OnboardRackProfile> rack;
+  // Set when the recipe names a measured position instead of a taught slot.
+  std::optional<PositionTarget> measured;
+  std::string measured_frame;
+  std::array<double, 3> measured_rpy_deg{{180.0, 0.0, 0.0}};
+  double measured_yaw_offset_deg = 0.0;
+  bool uses_measured_position = false;
 };
 
 struct PickTaskPorts {
+  // Optional measured position table; required only for `position:` recipes.
+  std::shared_ptr<const PositionTable> positions;
   std::function<agx_task_workflow::StepResult(const PickParameters&)> pick;
   std::function<bool()> cancelled;
   std::function<agx_task_workflow::StepResult()> entry_check;

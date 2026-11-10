@@ -1,5 +1,7 @@
 #include "agx_place_tasks/pick_task.hpp"
 
+#include "agx_place_tasks/onboard_positions.hpp"
+
 #include <array>
 #include <cassert>
 #include <memory>
@@ -60,6 +62,7 @@ int main() {
   int executions = 0, admissions = 0;
   PickParameters selected;
   PickTaskPorts ports;
+  PickTaskPorts policy_ports;
   ports.cancelled = [] { return false; };
   ports.pick = [&](const PickParameters& request) {
     ++executions;
@@ -71,8 +74,20 @@ int main() {
     return StepResult{true, "read-only admission"};
   };
 
+  auto positions = std::make_shared<PositionTable>();
+  positions->frame = "link_base_lift0";
+  positions->grasp_z = -0.105;
+  positions->approach_z = 0.040;
+  positions->tool_rpy_deg = std::array<double, 3>{{180.0, 0.0, 1.32}};
+  positions->tool_yaw_offset_deg = 45.0;
+  positions->positions.emplace("green_a", PositionTarget{"green_a", 0.3270, -0.0830, -0.105, 0.040});
+  positions->positions.emplace("near_blue",
+                               PositionTarget{"near_blue", 0.2524, -0.0764, -0.105, -0.020});
+  policy_ports = ports;
+  policy_ports.positions = positions;
+
   TaskRegistry registry;
-  RegisterPickTasks(registry, PlaceInstallation{Rack()}, ports);
+  RegisterPickTasks(registry, PlaceInstallation{Rack()}, policy_ports);
   const auto definition = DescribeTask(registry, "pick_from_onboard");
   assert(definition.type == "pick_from_onboard");
 
@@ -114,9 +129,38 @@ int main() {
       matching_state);
 
   TaskRegistry unqualified_registry;
-  RegisterPickTasks(unqualified_registry, PlaceInstallation{Rack(false)}, ports);
+  RegisterPickTasks(unqualified_registry, PlaceInstallation{Rack(false)}, policy_ports);
   ThrowsPrepare(DescribeTask(unqualified_registry, "pick_from_onboard"), spec, Plan());
   TaskRegistry empty_registry;
-  RegisterPickTasks(empty_registry, PlaceInstallation{}, ports);
+  RegisterPickTasks(empty_registry, PlaceInstallation{}, policy_ports);
   ThrowsPrepare(DescribeTask(empty_registry, "pick_from_onboard"), spec, Plan());
+
+  // 用实测位置表代替示教槽位。
+  {
+    const auto by_position = Spec(
+        "schema_version: 2\nworkflow_id: pick\n"
+        "tasks: [{id: take, type: pick_from_onboard, position: near_blue}]\n");
+    auto position_state = Plan();
+    const auto prepared_by_position = definition.prepare(by_position, position_state);
+    (void)prepared_by_position;
+  }
+  // slot 与 position 只能二选一。
+  ThrowsPrepare(definition,
+                Spec("schema_version: 2\nworkflow_id: pick\n"
+                     "tasks: [{id: take, type: pick_from_onboard, slot: 1, position: green_a}]\n"),
+                Plan());
+  // 位置表里没有这个名字。
+  ThrowsPrepare(definition,
+                Spec("schema_version: 2\nworkflow_id: pick\n"
+                     "tasks: [{id: take, type: pick_from_onboard, position: nowhere}]\n"),
+                Plan());
+  // 没装位置表时不能按 position 取管。
+  {
+    TaskRegistry no_table;
+    RegisterPickTasks(no_table, PlaceInstallation{Rack()}, ports);
+    ThrowsPrepare(DescribeTask(no_table, "pick_from_onboard"),
+                  Spec("schema_version: 2\nworkflow_id: pick\n"
+                       "tasks: [{id: take, type: pick_from_onboard, position: green_a}]\n"),
+                  Plan());
+  }
 }

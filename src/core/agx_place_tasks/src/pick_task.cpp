@@ -70,8 +70,10 @@ void RegisterPickTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIns
   pick.type = "pick_from_onboard";
   pick.description =
       "Take one tube out of a taught slot of the rack mounted on this robot; no vision";
-  pick.inputs = {{"slot", agx_task_workflow::InputType::Integer, true, "",
-                  "1-based onboard rack slot number"},
+  pick.inputs = {{"slot", agx_task_workflow::InputType::Integer, false, "",
+                  "1-based onboard rack slot number; alternative to position"},
+                 {"position", agx_task_workflow::InputType::String, false, "",
+                  "Name in the measured position table; alternative to slot"},
                  {"rack_profile", agx_task_workflow::InputType::String, false, "",
                   "Optional assertion; must equal the installed onboard rack profile"}};
   pick.interfaces = BaseInterfaces();
@@ -122,7 +124,11 @@ void RegisterPickTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIns
       throw std::invalid_argument("pick requires a preceding verified navigation/hold task");
     if (plan.payload_may_be_retained || Possible(state, agx_robot_task_runtime::effects::GripperHolding))
       throw std::invalid_argument("pick requires an empty gripper; the gripper may already hold a tube");
-    std::set<std::string> keys{"slot"};
+    const bool has_position = static_cast<bool>(task.parameters["position"]);
+    const bool has_slot = static_cast<bool>(task.parameters["slot"]);
+    if (has_position == has_slot)
+      throw std::invalid_argument("pick_from_onboard takes exactly one of slot or position");
+    std::set<std::string> keys{has_position ? "position" : "slot"};
     if (task.parameters["rack_profile"]) keys.insert("rack_profile");
     agx_task_workflow::RequireKeys(task.parameters, keys, "pick_from_onboard parameters");
     if (task.parameters["rack_profile"]) {
@@ -132,12 +138,26 @@ void RegisterPickTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIns
         throw std::invalid_argument("rack_profile is not the installed onboard rack");
     }
     PickParameters request;
-    request.slot = RequireSlot(task.parameters["slot"]);
-    if (!installed.rack->Find(request.slot))
-      throw std::invalid_argument("slot " + std::to_string(request.slot) +
-                                  " was never taught for the onboard rack '" +
-                                  installed.rack->profile_id + "'");
     request.rack = installed.rack;
+    if (has_position) {
+      if (!ports.positions)
+        throw std::invalid_argument("a measured position table is not installed");
+      const auto name = agx_task_workflow::RequireString(task.parameters["position"], "position");
+      const auto* target = ports.positions->Find(name);
+      if (!target)
+        throw std::invalid_argument("position '" + name + "' is not in the measured position table");
+      request.measured = *target;
+      request.measured_frame = ports.positions->frame;
+      request.measured_rpy_deg = ports.positions->tool_rpy_deg;
+      request.measured_yaw_offset_deg = ports.positions->tool_yaw_offset_deg;
+      request.uses_measured_position = true;
+    } else {
+      request.slot = RequireSlot(task.parameters["slot"]);
+      if (!installed.rack->Find(request.slot))
+        throw std::invalid_argument("slot " + std::to_string(request.slot) +
+                                    " was never taught for the onboard rack '" +
+                                    installed.rack->profile_id + "'");
+    }
     if (!ports.pick || !ports.cancelled)
       throw std::invalid_argument("pick execution ports are not bound");
     // A tube is now expected to travel in the gripper.

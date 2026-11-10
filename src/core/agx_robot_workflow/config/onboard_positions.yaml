@@ -1,0 +1,17 @@
+# 用实测点位而不是示教槽位来取放机载架上的试管。
+# 需要宿主加载位置表：
+#   <param name="onboard_positions"
+#          value="$(find agx_place_tasks)/config/green_tube_grasp.yaml"/>
+# 注意：这条配方仍然要前置 navigate 提供到站证据（held_station）。
+schema_version: 2
+workflow_id: onboard_positions_demo
+tasks:
+  - id: arrive
+    type: navigate
+    target: wb-100
+  - id: take_green
+    type: pick_from_onboard
+    position: green_a
+  - id: put_green
+    type: place_test_tube
+    slot: 1

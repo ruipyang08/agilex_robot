@@ -10,6 +10,7 @@ catkin_package(INCLUDE_DIRS include LIBRARIES place_tasks
   moveit_msgs moveit_ros_planning_interface dh_gripper_msgs DEPENDS yaml-cpp)
 add_library(place_tasks
   src/onboard_rack_profile.cpp
+  src/onboard_positions.cpp
   src/place_pose.cpp
   src/place_task.cpp
   src/pick_task.cpp
@@ -38,7 +39,7 @@ catkin_install_python(PROGRAMS scripts/check_rack_reach.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 if(CATKIN_ENABLE_TESTING)
-  foreach(test onboard_rack_profile place_pose place_task place_execution pick_task pick_execution)
+  foreach(test onboard_rack_profile onboard_positions place_pose place_task place_execution pick_task pick_execution)
     add_executable(${PROJECT_NAME}_${test}_test test/${test}_test.cpp)
     target_link_libraries(${PROJECT_NAME}_${test}_test place_tasks)
     target_compile_options(${PROJECT_NAME}_${test}_test PRIVATE -UNDEBUG)

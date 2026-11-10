@@ -155,6 +155,33 @@ rosrun agx_place_tasks green_tube_cycle.py --position blue_back_left --execute
 - 孔距 37.5 mm、盖径 35 mm，X 方向有效窗口只有几毫米，坐标必须实测，不能推算；
 - 闭合到 300 时若实测停在 305 附近表示夹住；停在 300 表示空。
 
+## 5.4 按实测点位取管（`position:`）
+
+除了按示教槽位（`slot:`），`pick_from_onboard` 也可以直接引用实测位置表里的名字：
+
+```yaml
+tasks:
+  - {id: take, type: pick_from_onboard, position: green_a}
+```
+
+宿主需要加载位置表：
+
+```xml
+<param name="onboard_positions"
+       value="$(find agx_place_tasks)/config/green_tube_grasp.yaml"/>
+```
+
+规则：
+
+| 项 | 行为 |
+|---|---|
+| `slot` 与 `position` 同时给或都不给 | prepare 报错 |
+| 名字不在位置表里 | prepare 报错 |
+| 宿主没装位置表却用 `position` | prepare 报错 |
+| 位置表里 `approach_z_m <= grasp_z_m` | 加载即报错 |
+
+每个点位可以单独覆盖 `approach_z_m`（靠近机器人的一排必须用更低的高度，否则直线下降走不完）。
+
 ## 6. 已知缺口（不要当成已完成）
 
 1. **动作已实现，但没有槽位占用传感器**（流程见第 7 节）：

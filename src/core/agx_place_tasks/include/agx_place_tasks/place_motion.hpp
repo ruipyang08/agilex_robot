@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -71,6 +72,19 @@ struct PickMotionOutcome {
   std::string detail;
   PlaceEvidence evidence;
 };
+
+// An explicit pair of poses, used when the target comes from a measured
+// position table instead of a taught rack slot.
+struct PickTarget {
+  std::string frame;
+  std::string tip_link;
+  Point3 approach_m;
+  Point3 grasp_m;
+  std::array<double, 4> orientation_xyzw{{1.0, 0.0, 0.0, 0.0}};
+};
+
+PickMotionOutcome RunPickMotionAt(const PickTarget& target, const PlaceMotionConfig& config,
+                                  const std::function<bool()>& stop_requested);
 
 // approach -> narrow -> straight descent -> close and measure -> straight retreat.
 // The grasp is only reported when the fingers stopped on something.

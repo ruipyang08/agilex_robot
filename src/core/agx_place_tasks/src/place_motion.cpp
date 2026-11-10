@@ -381,18 +381,37 @@ PlaceMotionOutcome RunPlaceMotion(const OnboardRackProfile& rack, std::size_t sl
 PickMotionOutcome RunPickMotion(const OnboardRackProfile& rack, std::size_t slot,
                                 const PlaceMotionConfig& config,
                                 const std::function<bool()>& stop_requested) {
+  const auto approach = ApproachPose(rack, slot);
+  const auto grasp = SlotPose(rack, slot);
+  PickTarget target;
+  target.frame = rack.parent_frame;
+  target.tip_link = rack.tip_link;
+  target.approach_m = approach.position;
+  target.grasp_m = grasp.position;
+  target.orientation_xyzw = approach.orientation_xyzw;
+  return RunPickMotionAt(target, config, stop_requested);
+}
+
+PickMotionOutcome RunPickMotionAt(const PickTarget& target, const PlaceMotionConfig& config,
+                                  const std::function<bool()>& stop_requested) {
   PickMotionOutcome outcome;
   try {
     if (!stop_requested) {
       outcome.detail = "pick motion requires a stop predicate";
       return outcome;
     }
-    const auto approach = ToRosPose(ApproachPose(rack, slot));
-    const auto insert = ToRosPose(SlotPose(rack, slot));
+    PlacementPose approach_pose;
+    approach_pose.position = target.approach_m;
+    approach_pose.orientation_xyzw = target.orientation_xyzw;
+    PlacementPose grasp_pose;
+    grasp_pose.position = target.grasp_m;
+    grasp_pose.orientation_xyzw = target.orientation_xyzw;
+    const auto approach = ToRosPose(approach_pose);
+    const auto insert = ToRosPose(grasp_pose);
 
     MoveGroupInterface group(config.group);
-    group.setPoseReferenceFrame(rack.parent_frame);
-    if (!rack.tip_link.empty()) group.setEndEffectorLink(rack.tip_link);
+    group.setPoseReferenceFrame(target.frame);
+    if (!target.tip_link.empty()) group.setEndEffectorLink(target.tip_link);
     group.setPlanningTime(config.planning_time_s);
     group.setMaxVelocityScalingFactor(config.velocity_scaling);
     group.setMaxAccelerationScalingFactor(config.acceleration_scaling);
