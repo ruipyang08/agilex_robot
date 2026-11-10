@@ -1,0 +1,41 @@
+# 机载蓝盒（5 行 x 4 列大孔，孔距 37.5 mm，盖径 35 mm）的取放点位
+# 2026-11-04 实机逐点验证：操作员目视确认 + 每轮实测闭合值。
+#
+# 判据：闭合到 300 时实测停在 305 附近表示夹住；停在 300 表示空。
+# 注意：X 方向有效窗口只有几毫米，这些坐标必须实测，不能按孔距推算。
+#
+# 动作顺序（现场确认过）：
+#   0 度姿态平移到目标上方 -> 原地转 45 度 -> 直线下降 -> 闭合 ->
+#   直线退回 -> 放回下降 -> 张开 -> 退回 -> 转回 0 度
+schema_version: 1
+
+green_tube:
+  frame: link_base_lift0
+  default: green_a
+
+  # approach_z_m 省略时用下面的默认值；靠近机器人的一排腕部接近限位，
+  # 必须用更低的接近高度才能走通直线下降。
+  approach_z_m: 0.040
+  grasp_z_m: -0.105
+
+  positions:
+    green_a:         {xy: [0.3270, -0.0830]}                      # 前排角落绿管
+    green_b:         {xy: [0.3320, -0.0070]}                      # 前排中间绿管
+    blue_edge:       {xy: [0.3240,  0.0670]}                      # 前排边缘蓝管
+    green_back:      {xy: [0.2524, -0.0034]}                       # 后排中间绿管
+    blue_back_right: {xy: [0.2524, -0.0764], approach_z_m: -0.020} # 后排右蓝管
+    blue_back_left:  {xy: [0.2524,  0.0716], approach_z_m: -0.020} # 后排左蓝管
+
+  tool_rpy_deg: [180.0, 0.0, 1.32]
+  tool_yaw_offset_deg: 45.0
+
+  gripper:
+    open_before_descent: 750.0
+    close_on_cap: 300.0
+    force: 50.0
+    speed: 50.0
+
+  motion:
+    velocity_scaling: 0.05
+    acceleration_scaling: 0.05
+    eef_step_m: 0.005

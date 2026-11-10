@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Mapping, Sequence, Tuple
+from typing import Any, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import yaml
@@ -147,6 +147,8 @@ class FixtureProfile:
     task_type: str
     target_cap_color: str
 
+    lift_target_m: Optional[float]
+    cap_top_height_above_floor_m: Optional[float]
     table_surface_height_above_floor_m: float
     table_height_tolerance_m: float
 
@@ -156,15 +158,6 @@ class FixtureProfile:
     cap_height_m: float
     diameter_tolerance_m: float
     height_tolerance_m: float
-
-    rows: int
-    columns: int
-    center_pitch_m: float
-    rack_height_above_surface_m: float
-    pitch_tolerance_m: float
-    maximum_missing_slots: int
-    minimum_layout_inliers: int
-    maximum_lattice_rms_error_m: float
 
     color_frame: str
     roi_normalized: NormalizedRoi
@@ -192,6 +185,18 @@ class FixtureProfile:
     lift_clearance_m: float
     downward_axis_tolerance_deg: float
 
+    # Optional: a fixture that is only ever used in single-target mode needs no
+    # lattice description, and inventing a pitch to satisfy a schema check is
+    # worse than stating that it was never measured.
+    rows: Optional[int] = None
+    columns: Optional[int] = None
+    center_pitch_m: Optional[float] = None
+    rack_height_above_surface_m: Optional[float] = None
+    pitch_tolerance_m: Optional[float] = None
+    maximum_missing_slots: Optional[int] = None
+    minimum_layout_inliers: Optional[int] = None
+    maximum_lattice_rms_error_m: Optional[float] = None
+
     def __post_init__(self) -> None:
         _string(self.task_type, "task_type")
         _string(self.target_cap_color, "target_cap_color")
@@ -217,9 +222,7 @@ class FixtureProfile:
             "cap_height_m",
             "diameter_tolerance_m",
             "height_tolerance_m",
-            "center_pitch_m",
-            "pitch_tolerance_m",
-            "maximum_lattice_rms_error_m",
+
             "cap_top_height_band_m",
             "maximum_target_temporal_spread_px",
             "maximum_target_center_error_px",
@@ -240,6 +243,13 @@ class FixtureProfile:
                 if field_name == "insertion_radial_clearance_m":
                     raise ValueError("insertion gap must be greater than zero") from exc
                 raise
+        if self.rows is None:
+            # No lattice was described, so nothing below applies.
+            return
+        _real(self.maximum_lattice_rms_error_m, "maximum_lattice_rms_error_m", positive=True)
+        if self.center_pitch_m is not None:
+            _real(self.center_pitch_m, "center_pitch_m", positive=True)
+            _real(self.pitch_tolerance_m, "pitch_tolerance_m", positive=True)
         rack_height = _real(
             self.rack_height_above_surface_m,
             "rack_height_above_surface_m",
@@ -315,9 +325,16 @@ class FixtureProfile:
 
     @property
     def expected_cap_top_height_above_floor_m(self) -> float:
+        if self.cap_top_height_above_floor_m is not None:
+            return self.cap_top_height_above_floor_m
+        rack = self.rack_height_above_surface_m
+        if rack is None:
+            raise ValueError(
+                "profile has neither a measured cap-top plane nor a rack height"
+            )
         return (
             self.table_surface_height_above_floor_m
-            + self.rack_height_above_surface_m
+            + rack
             + self.body_height_m
             + self.cap_height_m
         )
@@ -459,12 +476,37 @@ def _validate_simulation(
 
 def _load_profile(raw_profile: Any, context: str) -> FixtureProfile:
     profile = _require_mapping(raw_profile, context)
-    _require_exact_keys(profile, _PROFILE_KEYS, context)
+    missing_profile_keys = set(_PROFILE_KEYS) - set(profile) - {"layout"}
+    unexpected_profile_keys = set(profile) - set(_PROFILE_KEYS)
+    if missing_profile_keys or unexpected_profile_keys:
+        raise ValueError(
+            "{} keys are invalid (missing={}, unexpected={})".format(
+                context, sorted(missing_profile_keys), sorted(unexpected_profile_keys)
+            )
+        )
 
     sections = {}
     for section_name, expected_keys in _SECTION_KEYS.items():
+        if section_name == "layout" and section_name not in profile:
+            sections[section_name] = None
+            continue
         section = _require_mapping(profile[section_name], context + "." + section_name)
-        _require_exact_keys(section, expected_keys, context + "." + section_name)
+        if section_name == "table":
+            # An onboard fixture sits below the arm base, so the lift target
+            # cannot be derived as "surface minus zero-lift base height".
+            # Such a profile states the target itself; the surface height then
+            # only documents where the fixture stands.
+            allowed = set(expected_keys) | {"lift_target_m", "cap_top_height_above_floor_m"}
+            extra = set(section) - allowed
+            missing = set(expected_keys) - set(section)
+            if extra or missing:
+                raise ValueError(
+                    "{}.table keys are invalid (missing={}, unexpected={})".format(
+                        context, sorted(missing), sorted(extra)
+                    )
+                )
+        else:
+            _require_exact_keys(section, expected_keys, context + "." + section_name)
         sections[section_name] = section
 
     table = sections["table"]
@@ -474,14 +516,30 @@ def _load_profile(raw_profile: Any, context: str) -> FixtureProfile:
     gripper = sections["gripper"]
     motion = sections["motion"]
 
-    rows = _integer(layout["rows"], context + ".layout.rows", minimum=1)
-    columns = _integer(layout["columns"], context + ".layout.columns", minimum=1)
-    _validate_simulation(sections["simulation"], rows, columns, context + ".simulation")
+    if layout is None:
+        # Without a lattice there is no slot to validate the simulation
+        # target against; that block is only used by the simulation harness.
+        rows = columns = None
+    else:
+        rows = _integer(layout["rows"], context + ".layout.rows", minimum=1)
+        columns = _integer(layout["columns"], context + ".layout.columns", minimum=1)
+        _validate_simulation(sections["simulation"], rows, columns, context + ".simulation")
 
     return FixtureProfile(
         task_type=_string(profile["task_type"], context + ".task_type"),
         target_cap_color=_string(
             profile["target_cap_color"], context + ".target_cap_color"
+        ),
+        lift_target_m=(
+            _real(table["lift_target_m"], context + ".table.lift_target_m",
+                  nonnegative=True)
+            if "lift_target_m" in table else None
+        ),
+        cap_top_height_above_floor_m=(
+            _real(table["cap_top_height_above_floor_m"],
+                  context + ".table.cap_top_height_above_floor_m",
+                  positive=True)
+            if "cap_top_height_above_floor_m" in table else None
         ),
         table_surface_height_above_floor_m=_real(
             table["surface_height_above_floor_m"],
@@ -519,33 +577,45 @@ def _load_profile(raw_profile: Any, context: str) -> FixtureProfile:
         ),
         rows=rows,
         columns=columns,
-        center_pitch_m=_real(
-            layout["center_pitch_m"],
-            context + ".layout.center_pitch_m",
-            positive=True,
+        center_pitch_m=(
+            None if layout is None else _real(
+                layout["center_pitch_m"],
+                context + ".layout.center_pitch_m",
+                positive=True,
+            )
         ),
-        rack_height_above_surface_m=_real(
-            layout["rack_height_above_surface_m"],
-            context + ".layout.rack_height_above_surface_m",
+        rack_height_above_surface_m=(
+            None if layout is None else _real(
+                layout["rack_height_above_surface_m"],
+                context + ".layout.rack_height_above_surface_m",
+            )
         ),
-        pitch_tolerance_m=_real(
-            layout["pitch_tolerance_m"],
-            context + ".layout.pitch_tolerance_m",
-            positive=True,
+        pitch_tolerance_m=(
+            None if layout is None else _real(
+                layout["pitch_tolerance_m"],
+                context + ".layout.pitch_tolerance_m",
+                positive=True,
+            )
         ),
-        maximum_missing_slots=_integer(
-            layout["maximum_missing_slots"],
-            context + ".layout.maximum_missing_slots",
+        maximum_missing_slots=(
+            None if layout is None else _integer(
+                layout["maximum_missing_slots"],
+                context + ".layout.maximum_missing_slots",
+            )
         ),
-        minimum_layout_inliers=_integer(
-            layout["minimum_layout_inliers"],
-            context + ".layout.minimum_layout_inliers",
-            minimum=1,
+        minimum_layout_inliers=(
+            None if layout is None else _integer(
+                layout["minimum_layout_inliers"],
+                context + ".layout.minimum_layout_inliers",
+                minimum=1,
+            )
         ),
-        maximum_lattice_rms_error_m=_real(
-            layout["maximum_lattice_rms_error_m"],
-            context + ".layout.maximum_lattice_rms_error_m",
-            positive=True,
+        maximum_lattice_rms_error_m=(
+            None if layout is None else _real(
+                layout["maximum_lattice_rms_error_m"],
+                context + ".layout.maximum_lattice_rms_error_m",
+                positive=True,
+            )
         ),
         color_frame=_string(
             perception["color_frame"], context + ".perception.color_frame"

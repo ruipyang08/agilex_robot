@@ -67,3 +67,77 @@ tube_fixture_profiles:
       settling_steps: 1000
       maximum_settling_translation_m: 0.002
       maximum_settling_tilt_deg: 2.0
+
+  # 机载蓝色试管盒（装在机器人台面上，随车移动）。
+  # 与外部架的区别：
+  #   * 盒面低于臂根，升降停在 0，所以升降目标写死在 profile 里，不再由台面高度反推；
+  #   * 盖顶平面由深度相机实测（link_base_lift0 z = -0.220，对应离地 0.665 m）；
+  #   * 只做单目标识别（找唯一那支绿盖），因此不描述栅格布局。
+  # 管子：相邻孔中心距 37.5 mm（隔一个孔量得 75 mm）。盖径 35 mm 为实测。
+  onboard_box_v1:
+    task_type: test_tube_pickup
+    target_cap_color: green
+    table:
+      surface_height_above_floor_m: 0.677
+      height_tolerance_m: 0.020
+      lift_target_m: 0.0
+      cap_top_height_above_floor_m: 0.790
+    # 大孔 5 行 x 4 列（放试管），孔距 37.5 mm；小孔 6 行 x 5 列另作它用，不参与识别。
+    layout:
+      rows: 5
+      columns: 4
+      center_pitch_m: 0.0375
+      rack_height_above_surface_m: 0.0
+      pitch_tolerance_m: 0.004
+      maximum_missing_slots: 12
+      minimum_layout_inliers: 8
+      maximum_lattice_rms_error_m: 0.004
+    tube:
+      body_diameter_m: 0.020
+      body_height_m: 0.106
+      cap_diameter_m: 0.035
+      cap_height_m: 0.014
+      diameter_tolerance_m: 0.004
+      height_tolerance_m: 0.005
+    perception:
+      color_frame: cam1_color_optical_frame
+      roi_normalized: [0.0, 0.0, 1.0, 1.0]
+      minimum_layout_saturation: 70
+      # 实测：绿盖 H 87-90，蓝盖 H 103-113；H 上限取 96 留出分界空档。
+      target_hsv_lower: [80, 140, 50]
+      target_hsv_upper: [96, 255, 255]
+      cap_top_height_band_m: 0.008
+      minimum_cap_circularity: 0.70
+      maximum_cap_axis_ratio: 1.50
+      maximum_target_temporal_spread_px: 3.0
+      maximum_target_center_error_px: 8.0
+      maximum_recentering_iterations: 3
+    gripper:
+      fully_open_command: 1000.0
+      close_command: 0.0
+      insertion_radial_clearance_m: 0.002
+      finger_thickness_m: 0.008
+      finger_width_m: 0.012
+      tube_clearance_margin_m: 0.003
+      command_gap_samples:
+        - [0.0, 0.000]
+        - [500.0, 0.050]
+        - [1000.0, 0.100]
+    motion:
+      preparation_clearance_above_cap_m: 0.120
+      pregrasp_clearance_m: 0.080
+      grasp_offset_below_cap_top_m: 0.002
+      lift_clearance_m: 0.015
+      downward_axis_tolerance_deg: 2.0
+    simulation:
+      target_row: 0
+      target_column: 0
+      tube_mass_kg: 0.018
+      table_dimensions_m: [0.90, 0.80, 0.08]
+      table_center_world_xyz_m: [0.80, -0.15, 0.945]
+      target_cap_rgb: [0.10, 0.80, 0.20]
+      non_target_cap_colors:
+        - {name: blue, rgb: [0.10, 0.25, 0.85]}
+      settling_steps: 1000
+      maximum_settling_translation_m: 0.002
+      maximum_settling_tilt_deg: 2.0

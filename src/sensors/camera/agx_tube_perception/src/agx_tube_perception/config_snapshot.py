@@ -11,10 +11,10 @@ from numbers import Integral, Real
 import re
 import struct
 import threading
-from typing import Tuple
+from typing import Optional, Tuple
 
 from .detector import DetectorConfig
-from .service_logic import compute_lift_target, validate_mission_context
+from .service_logic import LiftTarget, compute_lift_target, validate_mission_context
 
 # Message declaration order is a versioned cross-language byte contract.
 PROJECTION_FIELDS = (
@@ -110,6 +110,10 @@ class PerceptionConfig:
     max_interframe_spread_m: float
     workspace_min_xyz_m: Tuple[float, float, float]
     workspace_max_xyz_m: Tuple[float, float, float]
+    # Optional. A fixture below the arm base cannot derive its lift target from
+    # a table height, so such a profile states the target itself.
+    lift_target_m: Optional[float] = None
+    cap_top_height_above_floor_m: Optional[float] = None
 
     def __post_init__(self):
         # Normalize caller-owned lists and numpy scalar values before freezing.
@@ -187,6 +191,9 @@ class PerceptionConfig:
         )
 
     def lift_target(self):
+        if self.lift_target_m is not None:
+            millimetres = int(round(self.lift_target_m * 1000.0))
+            return LiftTarget(millimetres, float(millimetres) / 1000.0)
         return compute_lift_target(self.table_surface_height_above_floor_m,
                                    self.arm_base_height_at_zero_lift_above_floor_m,
                                    self.lift_minimum_position_m, self.lift_maximum_position_m)
@@ -328,6 +335,12 @@ def legacy_request_context(profile_id, profile, mission):
             values[name] = getattr(profile, name)
         elif name in mission['perception']:
             values[name] = mission['perception'][name]
+    explicit_lift = getattr(profile, 'lift_target_m', None)
+    if explicit_lift is not None:
+        values['lift_target_m'] = explicit_lift
+    explicit_cap = getattr(profile, 'cap_top_height_above_floor_m', None)
+    if explicit_cap is not None:
+        values['cap_top_height_above_floor_m'] = explicit_cap
     values.update(schema_version=1, planning_frame=context['planning_frame'],
                   lift_state_topic=context['lift']['state_topic'],
                   arm_base_height_at_zero_lift_above_floor_m=context['lift']['arm_base_height_at_zero_lift_above_floor_m'],

@@ -38,6 +38,7 @@ from agx_tube_perception.fixture_profile import profile_from_mapping
 from agx_tube_perception.config_snapshot import ContextRegistry, legacy_request_context
 from agx_tube_perception.service_logic import (
     classify_lift_feedback,
+    LiftTarget,
     compute_lift_target,
     intersect_pixel_ray_with_horizontal_plane,
     lift_height_batch_is_consistent,
@@ -112,20 +113,37 @@ class TubePerceptionSession:
         self._target_cap_color = context.target_cap_color
         self._planning_frame = self._context["planning_frame"]
         self._color_frame = self._profile.color_frame
-        self._lift_target = compute_lift_target(
-            self._profile.table_surface_height_above_floor_m,
-            self._context["lift"][
-                "arm_base_height_at_zero_lift_above_floor_m"
-            ],
-            self._context["lift"]["minimum_position_m"],
-            self._context["lift"]["maximum_position_m"],
-        )
-        self._zero_lift_cap_top_z_m = (
-            self._lift_target.metres
-            + self._profile.rack_height_above_surface_m
-            + self._profile.body_height_m
-            + self._profile.cap_height_m
-        )
+        if self._profile.lift_target_m is not None:
+            # Onboard fixtures sit below the arm base: the target is recorded
+            # in the profile instead of being derived from a table height.
+            millimetres = int(round(self._profile.lift_target_m * 1000.0))
+            self._lift_target = LiftTarget(
+                millimetres, float(millimetres) / 1000.0
+            )
+        else:
+            self._lift_target = compute_lift_target(
+                self._profile.table_surface_height_above_floor_m,
+                self._context["lift"][
+                    "arm_base_height_at_zero_lift_above_floor_m"
+                ],
+                self._context["lift"]["minimum_position_m"],
+                self._context["lift"]["maximum_position_m"],
+            )
+        if getattr(self._profile, 'cap_top_height_above_floor_m', None) is not None:
+            # Measured plane, used when the fixture is not a table-mounted rack.
+            self._zero_lift_cap_top_z_m = (
+                self._profile.cap_top_height_above_floor_m
+                - self._context["lift"][
+                    "arm_base_height_at_zero_lift_above_floor_m"
+                ]
+            )
+        else:
+            self._zero_lift_cap_top_z_m = (
+                self._lift_target.metres
+                + self._profile.rack_height_above_surface_m
+                + self._profile.body_height_m
+                + self._profile.cap_height_m
+            )
         self._lift_tolerance_mm = int(
             np.floor(
                 self._context["lift"]["target_tolerance_m"] * 1000.0
