@@ -1,9 +1,11 @@
 #pragma once
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <string>
 
+#include "agx_place_tasks/onboard_positions.hpp"
 #include "agx_place_tasks/onboard_rack_profile.hpp"
 #include "agx_task_workflow/task_registry.hpp"
 
@@ -13,6 +15,15 @@ struct PlaceParameters {
   std::size_t slot = 0;
   // Immutable snapshot taken at preparation; never re-read during execution.
   std::shared_ptr<const OnboardRackProfile> rack;
+  // Set when the recipe names a measured position instead of a taught slot.
+  bool uses_measured_position = false;
+  double measured_x = 0.0;
+  double measured_y = 0.0;
+  double measured_approach_z = 0.0;
+  double measured_release_z = 0.0;
+  std::string measured_frame;
+  std::array<double, 3> measured_rpy_deg{{180.0, 0.0, 0.0}};
+  double measured_yaw_offset_deg = 0.0;
 };
 
 // The onboard rack is installed once. A missing or unqualified profile is a
@@ -22,6 +33,8 @@ struct PlaceInstallation {
 };
 
 struct PlaceTaskPorts {
+  // Optional measured position table; required only for `position:` recipes.
+  std::shared_ptr<const PositionTable> positions;
   std::function<agx_task_workflow::StepResult(const PlaceParameters&)> place;
   std::function<bool()> cancelled;
   std::function<agx_task_workflow::StepResult()> entry_check;

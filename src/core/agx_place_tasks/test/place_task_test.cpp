@@ -1,5 +1,7 @@
 #include "agx_place_tasks/place_task.hpp"
 
+#include "agx_place_tasks/onboard_positions.hpp"
+
 #include <array>
 #include <cassert>
 #include <memory>
@@ -124,4 +126,43 @@ int main() {
   TaskRegistry empty_registry;
   RegisterPlaceTasks(empty_registry, PlaceInstallation{}, ports);
   ThrowsPrepare(DescribeTask(empty_registry, "place_test_tube"), spec, PlanWithPayload());
+
+  // Measured position instead of a taught slot.
+  auto positions = std::make_shared<PositionTable>();
+  positions->frame = "link_base_lift0";
+  positions->grasp_z = -0.105;
+  positions->approach_z = 0.040;
+  positions->tool_rpy_deg = std::array<double, 3>{{180.0, 0.0, 1.32}};
+  positions->tool_yaw_offset_deg = 45.0;
+  positions->positions.emplace("1", PositionTarget{"1", 0.3240, 0.0670, -0.105, 0.040, -0.105});
+  auto position_ports = ports;
+  position_ports.positions = positions;
+  TaskRegistry position_registry;
+  RegisterPlaceTasks(position_registry, PlaceInstallation{Rack()}, position_ports);
+
+  const auto by_position = Spec(
+      "schema_version: 2\nworkflow_id: place\n"
+      "tasks: [{id: put, type: place_test_tube, position: 1}]\n");
+  auto position_state = PlanWithPayload();
+  (void)DescribeTask(position_registry, "place_test_tube").prepare(by_position, position_state);
+
+  // slot and position are mutually exclusive.
+  ThrowsPrepare(DescribeTask(position_registry, "place_test_tube"),
+                Spec("schema_version: 2\nworkflow_id: place\n"
+                     "tasks: [{id: put, type: place_test_tube, slot: 1, position: 1}]\n"),
+                PlanWithPayload());
+  // Unknown index.
+  ThrowsPrepare(DescribeTask(position_registry, "place_test_tube"),
+                Spec("schema_version: 2\nworkflow_id: place\n"
+                     "tasks: [{id: put, type: place_test_tube, position: 9}]\n"),
+                PlanWithPayload());
+  // No table installed.
+  {
+    TaskRegistry no_table;
+    RegisterPlaceTasks(no_table, PlaceInstallation{Rack()}, ports);
+    ThrowsPrepare(DescribeTask(no_table, "place_test_tube"),
+                  Spec("schema_version: 2\nworkflow_id: place\n"
+                       "tasks: [{id: put, type: place_test_tube, position: 1}]\n"),
+                  PlanWithPayload());
+  }
 }

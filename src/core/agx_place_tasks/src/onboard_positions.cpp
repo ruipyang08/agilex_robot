@@ -88,6 +88,8 @@ bool ValidatePositions(const PositionTable& table, std::string* detail) {
       return fail(entry.first + ": z must be finite");
     if (target.approach_z <= target.grasp_z)
       return fail(entry.first + ": approach_z must be above grasp_z");
+    if (target.place_z > target.approach_z)
+      return fail(entry.first + ": place_z must not be above approach_z");
   }
   if (detail) detail->clear();
   return true;
@@ -143,12 +145,13 @@ PositionTable ParsePositions(const YAML::Node& document, const std::string& sour
     target.name = name;
     target.grasp_z = table.grasp_z;
     target.approach_z = table.approach_z;
+    target.place_z = table.grasp_z;
     if (node.IsSequence()) {
       const auto xy = Pair(node, source + ".positions." + name);
       target.x = xy[0];
       target.y = xy[1];
     } else if (node.IsMap()) {
-      std::set<std::string> allowed{"xy", "approach_z_m", "grasp_z_m"};
+      std::set<std::string> allowed{"xy", "approach_z_m", "grasp_z_m", "place_z_m"};
       for (const auto& key : node)
         if (!allowed.count(key.first.as<std::string>()))
           throw std::invalid_argument(source + ".positions." + name + " has an unknown key");
@@ -159,6 +162,8 @@ PositionTable ParsePositions(const YAML::Node& document, const std::string& sour
         target.approach_z = Number(node["approach_z_m"], source + ".positions." + name + ".approach_z_m");
       if (node["grasp_z_m"])
         target.grasp_z = Number(node["grasp_z_m"], source + ".positions." + name + ".grasp_z_m");
+      if (node["place_z_m"])
+        target.place_z = Number(node["place_z_m"], source + ".positions." + name + ".place_z_m");
     } else {
       throw std::invalid_argument(source + ".positions." + name + " must be [x, y] or a mapping");
     }

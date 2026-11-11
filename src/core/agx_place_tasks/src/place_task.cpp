@@ -70,8 +70,10 @@ void RegisterPlaceTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIn
   place.type = "place_test_tube";
   place.description =
       "Place one held tube into a configured slot of the rack mounted on this robot; no vision";
-  place.inputs = {{"slot", agx_task_workflow::InputType::Integer, true, "",
-                   "1-based onboard rack slot number"},
+  place.inputs = {{"slot", agx_task_workflow::InputType::Integer, false, "",
+                   "1-based onboard rack slot number; alternative to position"},
+                  {"position", agx_task_workflow::InputType::Integer, false, "",
+                   "1-based index in the measured position table; alternative to slot"},
                   {"rack_profile", agx_task_workflow::InputType::String, false, "",
                    "Optional assertion; must equal the installed onboard rack profile"}};
   place.interfaces = BaseInterfaces();
@@ -126,7 +128,11 @@ void RegisterPlaceTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIn
           "placement requires a preceding task that may retain a held tube");
     if (Possible(state, agx_robot_task_runtime::effects::ObjectAtHolder))
       throw std::invalid_argument("placement requires a tube that is not already in a fixture slot");
-    std::set<std::string> keys{"slot"};
+    const bool has_position = static_cast<bool>(task.parameters["position"]);
+    const bool has_slot = static_cast<bool>(task.parameters["slot"]);
+    if (has_position == has_slot)
+      throw std::invalid_argument("place_test_tube takes exactly one of slot or position");
+    std::set<std::string> keys{has_position ? "position" : "slot"};
     if (task.parameters["rack_profile"]) keys.insert("rack_profile");
     agx_task_workflow::RequireKeys(task.parameters, keys, "place_test_tube parameters");
     if (task.parameters["rack_profile"]) {
@@ -136,12 +142,32 @@ void RegisterPlaceTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIn
         throw std::invalid_argument("rack_profile is not the installed onboard rack");
     }
     PlaceParameters request;
-    request.slot = RequireSlot(task.parameters["slot"]);
-    if (!installed.rack->Find(request.slot))
-      throw std::invalid_argument("slot " + std::to_string(request.slot) +
-                                  " was never taught for the onboard rack '" +
-                                  installed.rack->profile_id + "'");
     request.rack = installed.rack;
+    if (has_position) {
+      if (!ports.positions)
+        throw std::invalid_argument("a measured position table is not installed");
+      const auto index = RequireSlot(task.parameters["position"]);
+      const auto* target = ports.positions->Find(std::to_string(index));
+      if (!target)
+        throw std::invalid_argument("position " + std::to_string(index) +
+                                    " is not in the measured position table");
+      request.uses_measured_position = true;
+      request.measured_x = target->x;
+      request.measured_y = target->y;
+      request.measured_approach_z = target->approach_z;
+      // Releasing at the grasp height is what the standalone cycle validated:
+      // the tube drops the last few millimetres into its own hole.
+      request.measured_release_z = target->place_z;
+      request.measured_frame = ports.positions->frame;
+      request.measured_rpy_deg = ports.positions->tool_rpy_deg;
+      request.measured_yaw_offset_deg = ports.positions->tool_yaw_offset_deg;
+    } else {
+      request.slot = RequireSlot(task.parameters["slot"]);
+      if (!installed.rack->Find(request.slot))
+        throw std::invalid_argument("slot " + std::to_string(request.slot) +
+                                    " was never taught for the onboard rack '" +
+                                    installed.rack->profile_id + "'");
+    }
     if (!ports.place || !ports.cancelled)
       throw std::invalid_argument("place execution ports are not bound");
     // The tube stays on the robot, but it is no longer carried by the gripper.

@@ -253,13 +253,6 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     private_node.param<double>("place_eef_step_m",place_motion_.eef_step_m,place_motion_.eef_step_m);
     private_node.param<double>("place_gripper_force",place_motion_.gripper_force,place_motion_.gripper_force);
     private_node.param<double>("place_gripper_speed",place_motion_.gripper_speed,place_motion_.gripper_speed);
-    agx_place_tasks::PlaceTaskPorts place_ports;
-    place_ports.place=[this](const auto& request){return Place(request);};
-    place_ports.cancelled=nav_ports.cancelled;
-    place_ports.entry_check=[this]{return PlaceEntryCheck();};
-    place_ports.stop=nav_ports.stop;place_ports.cleanup=nav_ports.cleanup;
-    place_ports.continuation_check=nav_ports.continuation_check;
-    agx_place_tasks::RegisterPlaceTasks(registry,place,place_ports);
     std::string positions_path;
     private_node.param<std::string>("onboard_positions",positions_path,std::string());
     if(!positions_path.empty()){
@@ -271,6 +264,14 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
         std::exit(1);
       }
     }
+    agx_place_tasks::PlaceTaskPorts place_ports;
+    place_ports.place=[this](const auto& request){return Place(request);};
+    place_ports.positions=measured_positions_;
+    place_ports.cancelled=nav_ports.cancelled;
+    place_ports.entry_check=[this]{return PlaceEntryCheck();};
+    place_ports.stop=nav_ports.stop;place_ports.cleanup=nav_ports.cleanup;
+    place_ports.continuation_check=nav_ports.continuation_check;
+    agx_place_tasks::RegisterPlaceTasks(registry,place,place_ports);
     agx_place_tasks::PickTaskPorts pick_ports;
     pick_ports.positions=measured_positions_;
     pick_ports.pick=[this](const auto& request){return Pick(request);};
@@ -541,6 +542,8 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
         target.tip_link=parameters.rack?parameters.rack->tip_link:std::string("tcp_link");
         target.approach_m={parameters.measured->x,parameters.measured->y,parameters.measured->approach_z};
         target.grasp_m={parameters.measured->x,parameters.measured->y,parameters.measured->grasp_z};
+        target.approach_orientation_xyzw=
+            agx_place_tasks::QuaternionFromRpyDeg(parameters.measured_rpy_deg);
         target.orientation_xyzw=agx_place_tasks::QuaternionFromRpyDeg(parameters.measured_rpy_deg);
         target.orientation_xyzw=agx_place_tasks::RotateAboutToolZ(
             target.orientation_xyzw,parameters.measured_yaw_offset_deg*M_PI/180.0);
@@ -572,8 +575,30 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
     // Every move is bounded and cancellable through the same stop path as the
     // grasp mission; the motion itself never blocks past a stop request.
     ports.run=[this](const agx_place_tasks::PlaceParameters& parameters) {
-      return agx_place_tasks::RunPlaceMotion(*parameters.rack,parameters.slot,place_motion_,
-          [this]{return Cancelled() || RuntimeFailure()!=agx_task_workflow::FailureKind::None;});
+      const auto stop=[this]{return Cancelled() || RuntimeFailure()!=agx_task_workflow::FailureKind::None;};
+      if(!parameters.uses_measured_position){
+        return agx_place_tasks::RunPlaceMotion(*parameters.rack,parameters.slot,place_motion_,stop);
+      }
+      agx_place_tasks::PlaceMotionConfig config=place_motion_;
+      if(measured_positions_){
+        config.velocity_scaling=measured_positions_->velocity_scaling;
+        config.acceleration_scaling=measured_positions_->acceleration_scaling;
+        config.eef_step_m=measured_positions_->eef_step_m;
+        config.gripper_open_position=measured_positions_->open_before_descent;
+        config.descent_open_position=measured_positions_->open_before_descent;
+        config.gripper_force=measured_positions_->gripper_force;
+        config.gripper_speed=measured_positions_->gripper_speed;
+      }
+      agx_place_tasks::PickTarget target;
+      target.frame=parameters.measured_frame;
+      target.tip_link=parameters.rack?parameters.rack->tip_link:std::string("tcp_link");
+      target.approach_m={parameters.measured_x,parameters.measured_y,parameters.measured_approach_z};
+      target.grasp_m={parameters.measured_x,parameters.measured_y,parameters.measured_release_z};
+      target.approach_orientation_xyzw=
+          agx_place_tasks::QuaternionFromRpyDeg(parameters.measured_rpy_deg);
+      target.orientation_xyzw=agx_place_tasks::RotateAboutToolZ(
+          target.approach_orientation_xyzw,parameters.measured_yaw_offset_deg*M_PI/180.0);
+      return agx_place_tasks::RunPlaceMotionAt(target,config,stop);
     };
     ports.runtime_failure=[this]{return RuntimeFailure();};
     ports.stop_reason=[this]{std::lock_guard<std::mutex> lock(guard_mutex_);return grasp_stop_reason_;};

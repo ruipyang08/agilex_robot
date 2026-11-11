@@ -18,6 +18,10 @@ struct PositionTarget {
   double y = 0.0;
   double grasp_z = 0.0;
   double approach_z = 0.0;
+  // Height at which the gripper opens to put the tube back. Defaults to the
+  // grasp height: the standalone cycle released there and the tube dropped the
+  // last few millimetres into its own hole.
+  double place_z = 0.0;
 };
 
 // Table of measured positions for the rack mounted on this robot. Loaded from

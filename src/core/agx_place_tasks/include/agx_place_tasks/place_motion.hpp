@@ -68,6 +68,7 @@ PlaceMotionOutcome RunPlaceMotion(const OnboardRackProfile& rack, std::size_t sl
                                   const PlaceMotionConfig& config,
                                   const std::function<bool()>& stop_requested);
 
+
 struct PickMotionOutcome {
   bool grasped = false;
   bool grasp_uncertain = false;
@@ -84,11 +85,20 @@ struct PickTarget {
   std::string tip_link;
   Point3 approach_m;
   Point3 grasp_m;
+  // Orientation of the free-space approach. When it differs from
+  // `orientation_xyzw` the tool twists in place above the target before the
+  // straight descent, so the widened pads travel without a yaw offset.
+  std::array<double, 4> approach_orientation_xyzw{{1.0, 0.0, 0.0, 0.0}};
   std::array<double, 4> orientation_xyzw{{1.0, 0.0, 0.0, 0.0}};
 };
 
 PickMotionOutcome RunPickMotionAt(const PickTarget& target, const PlaceMotionConfig& config,
                                   const std::function<bool()>& stop_requested);
+// Same release sequence, but with the poses given explicitly (measured
+// positions instead of a taught slot). Reuses PickTarget because the shape is
+// identical: an approach pose, a lower pose and the two orientations.
+PlaceMotionOutcome RunPlaceMotionAt(const PickTarget& target, const PlaceMotionConfig& config,
+                                    const std::function<bool()>& stop_requested);
 
 // approach -> narrow -> straight descent -> close and measure -> straight retreat.
 // The grasp is only reported when the fingers stopped on something.

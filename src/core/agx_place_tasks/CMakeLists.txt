@@ -27,6 +27,10 @@ add_dependencies(place_one_slot ${catkin_EXPORTED_TARGETS})
 add_executable(pick_one_slot src/pick_one_slot.cpp)
 target_link_libraries(pick_one_slot place_tasks)
 add_dependencies(pick_one_slot ${catkin_EXPORTED_TARGETS})
+
+add_executable(pick_at_position src/pick_at_position.cpp)
+target_link_libraries(pick_at_position place_tasks)
+add_dependencies(pick_at_position ${catkin_EXPORTED_TARGETS})
 target_link_libraries(place_one_slot place_tasks)
 add_dependencies(place_one_slot ${catkin_EXPORTED_TARGETS})
 

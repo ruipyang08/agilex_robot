@@ -42,6 +42,12 @@ bool ExecutePlan(MoveGroupInterface& group, MoveGroupInterface::Plan& plan) {
   return group.execute(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS;
 }
 
+// q and -q describe the same rotation, so compare |dot| against one.
+bool SameOrientation(const std::array<double, 4>& a, const std::array<double, 4>& b) {
+  const double dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+  return std::fabs(dot) > 0.99995;  // about 0.5 degree
+}
+
 bool MoveToPose(MoveGroupInterface& group, const geometry_msgs::Pose& pose, std::string* detail,
                 const std::string& label) {
   group.clearPoseTargets();
@@ -294,18 +300,38 @@ bool WaitSettled(MoveGroupInterface& group, const PlaceMotionConfig& config,
 PlaceMotionOutcome RunPlaceMotion(const OnboardRackProfile& rack, std::size_t slot,
                                   const PlaceMotionConfig& config,
                                   const std::function<bool()>& stop_requested) {
+  const auto approach = ApproachPose(rack, slot);
+  const auto insert = SlotPose(rack, slot);
+  PickTarget target;
+  target.frame = rack.parent_frame;
+  target.tip_link = rack.tip_link;
+  target.approach_m = approach.position;
+  target.grasp_m = insert.position;
+  target.orientation_xyzw = approach.orientation_xyzw;
+  target.approach_orientation_xyzw = approach.orientation_xyzw;
+  return RunPlaceMotionAt(target, config, stop_requested);
+}
+
+PlaceMotionOutcome RunPlaceMotionAt(const PickTarget& target, const PlaceMotionConfig& config,
+                                    const std::function<bool()>& stop_requested) {
   PlaceMotionOutcome outcome;
   try {
     if (!stop_requested) {
       outcome.detail = "place motion requires a stop predicate";
       return outcome;
     }
-    const auto approach = ToRosPose(ApproachPose(rack, slot));
-    const auto insert = ToRosPose(SlotPose(rack, slot));
+    PlacementPose approach_pose;
+    approach_pose.position = target.approach_m;
+    approach_pose.orientation_xyzw = target.approach_orientation_xyzw;
+    PlacementPose insert_pose;
+    insert_pose.position = target.grasp_m;
+    insert_pose.orientation_xyzw = target.orientation_xyzw;
+    const auto approach = ToRosPose(approach_pose);
+    const auto insert = ToRosPose(insert_pose);
 
     MoveGroupInterface group(config.group);
-    group.setPoseReferenceFrame(rack.parent_frame);
-    if (!rack.tip_link.empty()) group.setEndEffectorLink(rack.tip_link);
+    group.setPoseReferenceFrame(target.frame);
+    if (!target.tip_link.empty()) group.setEndEffectorLink(target.tip_link);
     group.setPlanningTime(config.planning_time_s);
     group.setMaxVelocityScalingFactor(config.velocity_scaling);
     group.setMaxAccelerationScalingFactor(config.acceleration_scaling);
@@ -319,6 +345,12 @@ PlaceMotionOutcome RunPlaceMotion(const OnboardRackProfile& rack, std::size_t sl
     if (StopRequested(stop_requested)) {
       outcome.detail = "stopped above the slot; nothing was released";
       return outcome;
+    }
+    if (!SameOrientation(target.approach_orientation_xyzw, target.orientation_xyzw)) {
+      PlacementPose twist_pose;
+      twist_pose.position = target.approach_m;
+      twist_pose.orientation_xyzw = target.orientation_xyzw;
+      if (!MoveToPose(group, ToRosPose(twist_pose), &outcome.detail, "twist")) return outcome;
     }
     // Narrow the pads before entering the rack: at full opening they sweep the
     // neighbouring caps. This only ever closes, so a held tube is untouched.
@@ -389,6 +421,7 @@ PickMotionOutcome RunPickMotion(const OnboardRackProfile& rack, std::size_t slot
   target.approach_m = approach.position;
   target.grasp_m = grasp.position;
   target.orientation_xyzw = approach.orientation_xyzw;
+  target.approach_orientation_xyzw = approach.orientation_xyzw;
   return RunPickMotionAt(target, config, stop_requested);
 }
 
@@ -402,7 +435,7 @@ PickMotionOutcome RunPickMotionAt(const PickTarget& target, const PlaceMotionCon
     }
     PlacementPose approach_pose;
     approach_pose.position = target.approach_m;
-    approach_pose.orientation_xyzw = target.orientation_xyzw;
+    approach_pose.orientation_xyzw = target.approach_orientation_xyzw;
     PlacementPose grasp_pose;
     grasp_pose.position = target.grasp_m;
     grasp_pose.orientation_xyzw = target.orientation_xyzw;
@@ -421,6 +454,16 @@ PickMotionOutcome RunPickMotionAt(const PickTarget& target, const PlaceMotionCon
       return outcome;
     }
     if (!MoveToPose(group, approach, &outcome.detail, "approach")) return outcome;
+
+    // Approach with the travel yaw and only twist once above the target: the
+    // pads are at their widest during the free-space move, so a yaw offset
+    // there swings them across the neighbouring caps.
+    if (!SameOrientation(target.approach_orientation_xyzw, target.orientation_xyzw)) {
+      PlacementPose twist_pose;
+      twist_pose.position = target.approach_m;
+      twist_pose.orientation_xyzw = target.orientation_xyzw;
+      if (!MoveToPose(group, ToRosPose(twist_pose), &outcome.detail, "twist")) return outcome;
+    }
 
     // Pads wide enough to straddle the cap, narrow enough to pass the neighbours.
     if (!NarrowForDescent(config, &outcome.detail, stop_requested)) return outcome;
