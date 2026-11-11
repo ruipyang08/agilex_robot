@@ -530,6 +530,7 @@ class Workflow : public std::enable_shared_from_this<Workflow> {
           config.eef_step_m=measured_positions_->eef_step_m;
           config.gripper_open_position=measured_positions_->open_before_descent;
           config.grasp_close_position=measured_positions_->close_on_cap;
+          config.grasp_held_margin=measured_positions_->held_margin;
           config.gripper_force=measured_positions_->gripper_force;
           config.gripper_speed=measured_positions_->gripper_speed;
           // The measured rows were taught with these heights; keep them exact.

@@ -80,9 +80,8 @@ int main() {
   positions->approach_z = 0.040;
   positions->tool_rpy_deg = std::array<double, 3>{{180.0, 0.0, 1.32}};
   positions->tool_yaw_offset_deg = 45.0;
-  positions->positions.emplace("green_a", PositionTarget{"green_a", 0.3270, -0.0830, -0.105, 0.040});
-  positions->positions.emplace("near_blue",
-                               PositionTarget{"near_blue", 0.2524, -0.0764, -0.105, -0.020});
+  positions->positions.emplace("1", PositionTarget{"1", 0.3240, 0.0670, -0.105, 0.040});
+  positions->positions.emplace("4", PositionTarget{"4", 0.2524, 0.0716, -0.105, -0.020});
   policy_ports = ports;
   policy_ports.positions = positions;
 
@@ -139,7 +138,7 @@ int main() {
   {
     const auto by_position = Spec(
         "schema_version: 2\nworkflow_id: pick\n"
-        "tasks: [{id: take, type: pick_from_onboard, position: near_blue}]\n");
+        "tasks: [{id: take, type: pick_from_onboard, position: 4}]\n");
     auto position_state = Plan();
     const auto prepared_by_position = definition.prepare(by_position, position_state);
     (void)prepared_by_position;
@@ -147,12 +146,12 @@ int main() {
   // slot 与 position 只能二选一。
   ThrowsPrepare(definition,
                 Spec("schema_version: 2\nworkflow_id: pick\n"
-                     "tasks: [{id: take, type: pick_from_onboard, slot: 1, position: green_a}]\n"),
+                     "tasks: [{id: take, type: pick_from_onboard, slot: 1, position: 1}]\n"),
                 Plan());
   // 位置表里没有这个名字。
   ThrowsPrepare(definition,
                 Spec("schema_version: 2\nworkflow_id: pick\n"
-                     "tasks: [{id: take, type: pick_from_onboard, position: nowhere}]\n"),
+                     "tasks: [{id: take, type: pick_from_onboard, position: 9}]\n"),
                 Plan());
   // 没装位置表时不能按 position 取管。
   {
@@ -160,7 +159,7 @@ int main() {
     RegisterPickTasks(no_table, PlaceInstallation{Rack()}, ports);
     ThrowsPrepare(DescribeTask(no_table, "pick_from_onboard"),
                   Spec("schema_version: 2\nworkflow_id: pick\n"
-                       "tasks: [{id: take, type: pick_from_onboard, position: green_a}]\n"),
+                       "tasks: [{id: take, type: pick_from_onboard, position: 1}]\n"),
                   Plan());
   }
 }

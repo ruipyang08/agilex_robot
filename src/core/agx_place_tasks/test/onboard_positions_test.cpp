@@ -30,7 +30,8 @@ green_tube:
   tool_yaw_offset_deg: 45.0
   gripper:
     open_before_descent: 750.0
-    close_on_cap: 300.0
+    close_on_cap: 150.0
+    held_margin: 60.0
     force: 50.0
     speed: 50.0
   motion:
@@ -52,7 +53,8 @@ int main() {
   assert(Close(table.grasp_z, -0.105));
   assert(Close(table.tool_yaw_offset_deg, 45.0));
   assert(Close(table.velocity_scaling, 0.05));
-  assert(Close(table.close_on_cap, 300.0));
+  assert(Close(table.close_on_cap, 150.0));
+  assert(Close(table.held_margin, 60.0));
   const auto* far = table.Find("far");
   assert(far && Close(far->approach_z, 0.040) && Close(far->grasp_z, -0.105));
   const auto* near = table.Find("near");
@@ -64,11 +66,11 @@ int main() {
                        "config/green_tube_grasp.yaml";
   const auto measured = LoadPositions(shipped.string());
   assert(measured.positions.size() == 6);
-  assert(measured.default_name == "green_a");
-  assert(Close(measured.Find("green_a")->x, 0.3270));
-  assert(Close(measured.Find("green_a")->y, -0.0830));
-  assert(Close(measured.Find("blue_back_left")->approach_z, -0.020));
-  assert(Close(measured.Find("green_b")->approach_z, 0.040));
+  assert(measured.default_name == "1");
+  assert(measured.Find("3") && Close(measured.Find("3")->x, 0.3270));
+  assert(Close(measured.Find("3")->y, -0.0830));
+  assert(Close(measured.Find("4")->approach_z, -0.020));
+  assert(Close(measured.Find("2")->approach_z, 0.040));
 
   // 3. 夹不到的输入必须在加载时就失败。
   {

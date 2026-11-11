@@ -435,11 +435,13 @@ PickMotionOutcome RunPickMotionAt(const PickTarget& target, const PlaceMotionCon
                         stop_requested)) {
       outcome.detail = "gripper did not report a position after the close command";
       outcome.grasp_uncertain = true;
-    } else if (closed <= config.grasp_held_min_position) {
-      outcome.detail = "fingers closed to " + std::to_string(closed) + "; nothing was between them";
+    } else if (closed < config.grasp_close_position + config.grasp_held_margin) {
+      outcome.detail = "fingers closed to " + std::to_string(closed) + " against a command of " +
+                       std::to_string(config.grasp_close_position) + "; nothing was between them";
     } else {
       outcome.grasped = true;
-      outcome.detail = "fingers stopped at " + std::to_string(closed) + " on an object";
+      outcome.detail = "fingers stopped at " + std::to_string(closed) + " on an object (command " +
+                       std::to_string(config.grasp_close_position) + ")";
     }
     dh_gripper_msgs::GripperState measured_state;
     if (ReadGripperState(config, 0.5, &measured_state, stop_requested)) {

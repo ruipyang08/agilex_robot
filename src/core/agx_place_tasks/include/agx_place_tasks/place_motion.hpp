@@ -40,11 +40,15 @@ struct PlaceMotionConfig {
   // false the release step is skipped instead of reporting an empty gripper
   // opening as a released object.
   bool expects_held_object = true;
-  // Pick sequence: close until the fingers stop on the tube. An empty slot
-  // closes all the way to about zero, so that is how "nothing grasped" is
-  // detected rather than assumed.
-  double grasp_close_position = 200.0;
-  double grasp_held_min_position = 80.0;
+  // Pick sequence: command a gap clearly narrower than the tube, then judge by
+  // how far the fingers stop ABOVE that command. An empty gripper reaches the
+  // command (margin ~0); a 35 mm cap stops tens of counts higher. Comparing
+  // against the command instead of an absolute floor keeps the test valid when
+  // the commanded gap changes.
+  // Default for the taught-slot path, which grips the 20 mm tube body:
+  // the command must stay clearly below that width or the margin is zero.
+  double grasp_close_position = 100.0;
+  double grasp_held_margin = 60.0;
   double grasp_timeout_s = 4.0;
   double settle_velocity_rad_s = 0.02;
   double settle_timeout_s = 3.0;

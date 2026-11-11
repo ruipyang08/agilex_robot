@@ -72,8 +72,8 @@ void RegisterPickTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIns
       "Take one tube out of a taught slot of the rack mounted on this robot; no vision";
   pick.inputs = {{"slot", agx_task_workflow::InputType::Integer, false, "",
                   "1-based onboard rack slot number; alternative to position"},
-                 {"position", agx_task_workflow::InputType::String, false, "",
-                  "Name in the measured position table; alternative to slot"},
+                 {"position", agx_task_workflow::InputType::Integer, false, "",
+                  "1-based index in the measured position table; alternative to slot"},
                  {"rack_profile", agx_task_workflow::InputType::String, false, "",
                   "Optional assertion; must equal the installed onboard rack profile"}};
   pick.interfaces = BaseInterfaces();
@@ -142,7 +142,8 @@ void RegisterPickTasks(agx_task_workflow::TaskRegistry& registry, const PlaceIns
     if (has_position) {
       if (!ports.positions)
         throw std::invalid_argument("a measured position table is not installed");
-      const auto name = agx_task_workflow::RequireString(task.parameters["position"], "position");
+      const auto index = RequireSlot(task.parameters["position"]);
+      const auto name = std::to_string(index);
       const auto* target = ports.positions->Find(name);
       if (!target)
         throw std::invalid_argument("position '" + name + "' is not in the measured position table");

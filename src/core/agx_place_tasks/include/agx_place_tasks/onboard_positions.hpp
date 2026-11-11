@@ -33,7 +33,9 @@ struct PositionTable {
   double acceleration_scaling = 0.05;
   double eef_step_m = 0.005;
   double open_before_descent = 750.0;
-  double close_on_cap = 300.0;
+  double close_on_cap = 150.0;
+  // How far above the commanded gap the fingers must stop to count as held.
+  double held_margin = 60.0;
   double gripper_force = 50.0;
   double gripper_speed = 50.0;
   std::map<std::string, PositionTarget> positions;

@@ -11,28 +11,36 @@ schema_version: 1
 
 green_tube:
   frame: link_base_lift0
-  default: green_a
+  default: "1"
 
   # approach_z_m 省略时用下面的默认值；靠近机器人的一排腕部接近限位，
   # 必须用更低的接近高度才能走通直线下降。
   approach_z_m: 0.040
   grasp_z_m: -0.105
 
+  # 编号与 onboard_rack_profiles.yaml 的 slot 一一对应：
+  #   1..3 = 前排（左/中/右）  4..6 = 后排（左/中/右）
+  # 同号表示同一列，但 z 不同：slot 是放置高度(-0.078)，这里是抓取高度(-0.105)。
   positions:
-    green_a:         {xy: [0.3270, -0.0830]}                      # 前排角落绿管
-    green_b:         {xy: [0.3320, -0.0070]}                      # 前排中间绿管
-    blue_edge:       {xy: [0.3240,  0.0670]}                      # 前排边缘蓝管
-    green_back:      {xy: [0.2524, -0.0034]}                       # 后排中间绿管
-    blue_back_right: {xy: [0.2524, -0.0764], approach_z_m: -0.020} # 后排右蓝管
-    blue_back_left:  {xy: [0.2524,  0.0716], approach_z_m: -0.020} # 后排左蓝管
+    "1": {xy: [0.3240,  0.0670]}                       # 前排左（原 blue_edge）
+    "2": {xy: [0.3320, -0.0070]}                       # 前排中（原 green_b）
+    "3": {xy: [0.3270, -0.0830]}                       # 前排右（原 green_a）
+    "4": {xy: [0.2524,  0.0716], approach_z_m: -0.020} # 后排左（原 blue_back_left）
+    "5": {xy: [0.2524, -0.0034]}                       # 后排中（原 green_back）
+    "6": {xy: [0.2524, -0.0764], approach_z_m: -0.020} # 后排右（原 blue_back_right）
 
   tool_rpy_deg: [180.0, 0.0, 1.32]
   tool_yaw_offset_deg: 45.0
 
   gripper:
     open_before_descent: 750.0
-    close_on_cap: 300.0
-    force: 50.0
+    # 闭合到 15 mm（盖径 35 mm），空夹爪能走到 150，夹住盖子会停在 300 以上，
+    # 两者差 150 个数，远超 ±3 的读数噪声。不要改回 300，那样只剩 5 个数余量。
+    close_on_cap: 150.0
+    # 实测值要高出指令 60 个数（6 mm）才判为夹住；空夹爪只会高几个数。
+    held_margin: 60.0
+    # 25% 力，避免把软塑料盖压扁导致读数漂移。
+    force: 25.0
     speed: 50.0
 
   motion:

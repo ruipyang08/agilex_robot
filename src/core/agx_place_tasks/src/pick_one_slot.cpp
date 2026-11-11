@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
   std::string rack_file, rack_id;
   int slot = 0;
   double velocity = 0.05, acceleration = 0.05, eef_step = 0.005;
-  double descent_width = 750.0, close_position = 200.0;
+  double descent_width = 750.0, close_position = 100.0;
   bool execute = false;
   private_node.param<std::string>("rack_file", rack_file, "");
   private_node.param<std::string>("rack_id", rack_id, "");

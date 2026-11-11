@@ -71,6 +71,10 @@ bool ValidatePositions(const PositionTable& table, std::string* detail) {
     return fail("acceleration_scaling must be inside (0, 1]");
   if (table.eef_step_m <= 0.0 || table.eef_step_m > 0.05)
     return fail("eef_step_m must be inside (0, 0.05]");
+  if (table.close_on_cap <= 0.0 || table.close_on_cap > 1000.0)
+    return fail("close_on_cap must be inside (0, 1000]");
+  if (table.held_margin <= 0.0)
+    return fail("held_margin must be positive");
   if (!table.default_name.empty() && !table.Find(table.default_name))
     return fail("default names a position that is not listed");
   for (const auto& entry : table.positions) {
@@ -123,6 +127,8 @@ PositionTable ParsePositions(const YAML::Node& document, const std::string& sour
           Number(gripper["open_before_descent"], source + ".gripper.open_before_descent");
     if (gripper["close_on_cap"])
       table.close_on_cap = Number(gripper["close_on_cap"], source + ".gripper.close_on_cap");
+    if (gripper["held_margin"])
+      table.held_margin = Number(gripper["held_margin"], source + ".gripper.held_margin");
     if (gripper["force"]) table.gripper_force = Number(gripper["force"], source + ".gripper.force");
     if (gripper["speed"]) table.gripper_speed = Number(gripper["speed"], source + ".gripper.speed");
   }

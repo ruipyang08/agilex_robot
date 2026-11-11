@@ -69,7 +69,7 @@ def main():
     parser.add_argument("--execute", action="store_true", help="真正驱动机械臂")
     parser.add_argument("--pick-only", action="store_true", help="只取不放下")
     parser.add_argument("--position", default=None,
-                        help="positions 表里的名字，如 green_a / green_b / blue_edge")
+                        help="positions 表里的编号 1-6（1-3 前排，4-6 后排）")
     arguments = parser.parse_args()
 
     spec = load(arguments.config)
@@ -84,7 +84,9 @@ def main():
         else:
             x, y = entry
     else:
-        x, y = spec["center_xy_m"]
+        raise SystemExit(
+            "position %r is not in the table; known: %s"
+            % (name, ", ".join(sorted(positions))))
     grasp_z = spec["grasp_z_m"]
     gripper = spec["gripper"]
     motion = spec["motion"]
@@ -166,9 +168,14 @@ def main():
     group.clear_pose_targets()
 
     straight(grasp_z, "descend")
-    drive(gripper["close_on_cap"])
+    close_gap = float(gripper["close_on_cap"])
+    drive(close_gap)
     closed = settled()
-    print("closed at: %.0f (305 附近=夹住, 300=空)" % (closed or -1))
+    margin = (closed if closed is not None else 0.0) - close_gap
+    held = margin >= float(gripper["held_margin"])
+    print("closed at: %.0f (command %.0f, margin %+.0f) -> %s"
+          % (closed if closed is not None else -1, close_gap, margin,
+             "HELD" if held else "EMPTY"))
     straight(approach_z, "retreat")
 
     if arguments.pick_only:

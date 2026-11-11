@@ -136,17 +136,20 @@ tasks:
 配置在 `config/green_tube_grasp.yaml`，脚本 `scripts/green_tube_cycle.py` 读取：
 
 ```bash
-rosrun agx_place_tasks green_tube_cycle.py --position blue_back_left --execute
+rosrun agx_place_tasks green_tube_cycle.py --position 4 --execute
 ```
 
-| 名称 | XY (m) | 接近高度 | 说明 |
-|---|---|---|---|
-| green_a | 0.3270, −0.0830 | +0.040 | 前排角落绿管 |
-| green_b | 0.3320, −0.0070 | +0.040 | 前排中间绿管 |
-| blue_edge | 0.3240, +0.0670 | +0.040 | 前排边缘蓝管 |
-| green_back | 0.2524, −0.0034 | +0.040 | 后排中间绿管 |
-| blue_back_right | 0.2524, −0.0764 | **−0.020** | 后排右蓝管 |
-| blue_back_left | 0.2524, +0.0716 | **−0.020** | 后排左蓝管 |
+| 编号 | XY (m) | 接近高度 | 对应 slot | 位置 |
+|---|---|---|---|---|
+| 1 | 0.3240, +0.0670 | +0.040 | slot 1 | 前排左 |
+| 2 | 0.3320, −0.0070 | +0.040 | slot 2 | 前排中 |
+| 3 | 0.3270, −0.0830 | +0.040 | slot 3 | 前排右 |
+| 4 | 0.2524, +0.0716 | **−0.020** | slot 4 | 后排左 |
+| 5 | 0.2524, −0.0034 | +0.040 | slot 5 | 后排中 |
+| 6 | 0.2524, −0.0764 | **−0.020** | slot 6 | 后排右 |
+
+编号与 `slot` 一一对应（同一列），但 z 语义不同：`slot` 是放置高度（−0.078），
+这里是抓取高度（−0.105，盖顶下方 10 mm）。同号不等于同一高度，别混用。
 
 要点：
 
@@ -161,7 +164,7 @@ rosrun agx_place_tasks green_tube_cycle.py --position blue_back_left --execute
 
 ```yaml
 tasks:
-  - {id: take, type: pick_from_onboard, position: green_a}
+  - {id: take, type: pick_from_onboard, position: 3}
 ```
 
 宿主需要加载位置表：

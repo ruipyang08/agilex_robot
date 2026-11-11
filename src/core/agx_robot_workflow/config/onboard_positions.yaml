@@ -11,7 +11,7 @@ tasks:
     target: wb-100
   - id: take_green
     type: pick_from_onboard
-    position: green_a
+    position: 3
   - id: put_green
     type: place_test_tube
     slot: 1
