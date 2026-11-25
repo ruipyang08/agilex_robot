@@ -10,8 +10,8 @@ tube_grasp:
       view_region:
         x_bounds_m: [0.45, 0.65]
         preferred_x_m: 0.55
-        clearance_above_cap_bounds_m: [0.03, 0.25]
-        preferred_clearance_above_cap_m: 0.06
+        clearance_above_cap_bounds_m: [0.24, 0.30]
+        preferred_clearance_above_cap_m: 0.26
         sampling_step_m: 0.025
         entry_y_m: 0.0
         waypoint_y_tolerance_m: 0.005

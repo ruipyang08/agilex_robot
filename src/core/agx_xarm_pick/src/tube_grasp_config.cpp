@@ -1267,7 +1267,10 @@ bool ValidateTubeMotionConfig(const agx_xarm_pick::TubeTaskMotionConfig& config)
 
   if (!geometry_valid || !perception_valid || !commands_valid ||
       !motion_valid || !lift_valid || !protocol_valid) {
-    ROS_ERROR("invalid /tube_grasp protocol values");
+    ROS_ERROR("invalid /tube_grasp protocol values: geometry=%d perception=%d commands=%d "
+              "motion=%d lift=%d protocol=%d",
+              geometry_valid, perception_valid, commands_valid, motion_valid, lift_valid,
+              protocol_valid);
     return false;
   }
   return true;

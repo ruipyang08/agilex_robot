@@ -508,7 +508,9 @@ inline bool initial_compact_preparation_state_is_safe(
       tcp_z >= initial_z_min_m &&
       tcp_z <= initial_z_max_m &&
       tcp_z < phase_one_height_m &&
-      std::abs(joint1 - centerline_joint) <=
+      // joint1 can be reported wrapped (e.g. -6.256 rad is -0.027 rad), so
+      // compare the shortest angular difference instead of the raw values.
+      std::abs(std::remainder(joint1 - centerline_joint, 2.0 * M_PI)) <=
           centerline_joint_tolerance;
 }
 

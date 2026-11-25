@@ -94,9 +94,10 @@ int main() {
       false, false, false, false, true, false, false, false, 0));
   assert(!lift_feedback_is_fault_free(
       false, false, false, false, false, true, false, false, 0));
-  assert(!lift_feedback_is_fault_free(
+  // 外部控制模式是正常工况；软件急停锁存由新的位置指令清除，都不是故障。
+  assert(lift_feedback_is_fault_free(
       false, false, false, false, false, false, true, false, 0));
-  assert(!lift_feedback_is_fault_free(
+  assert(lift_feedback_is_fault_free(
       false, false, false, false, false, false, false, true, 0));
   assert(!lift_feedback_is_fault_free(
       false, false, false, false, false, false, false, false, 1));

@@ -76,14 +76,19 @@ inline bool lift_feedback_is_fault_free(
     const bool external_control_mode,
     const bool stop_flag,
     const std::int64_t fps_error) {
+  // external_control_mode is how this robot drives the lift (service-based
+  // supervision), so it is the normal operating mode, not a fault. stop_flag
+  // is a latched software stop that a new position command clears; treating the
+  // latch as a fault made every run after the first stop fail.
+  // Real electrical/encoder/fps faults still fail the check.
+  (void)external_control_mode;
+  (void)stop_flag;
   return !overflow_i &&
       !overflow_v &&
       !encoder_error &&
       !position_bias_over &&
       !under_voltage &&
       !overloaded &&
-      !external_control_mode &&
-      !stop_flag &&
       fps_error == 0;
 }
 

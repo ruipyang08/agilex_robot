@@ -22,11 +22,23 @@ int main(int argc, char** argv) {
       "table_grid_3x3_v1");
   private_node.param<std::string>("target_cap_color", target_cap_color, "green");
 
+  // Bench testing only: the workflow host supplies a real "base held" proof.
+  // This runner has none, so without this flag every mission stops at
+  // kBaseNotStopped. It must stay off unless the rover really is stationary.
+  bool assume_base_held = false;
+  private_node.param("assume_base_held", assume_base_held, false);
+  std::function<bool()> held_base;
+  if (assume_base_held) {
+    ROS_WARN("demo_tube_pick: assuming the rover is stopped (test shim)");
+    held_base = [] { return true; };
+  }
+
   ros::AsyncSpinner spinner(4);
   spinner.start();
   try {
     const auto result = agxcore::RunTubeMissionMonitored(
-        node, fixture_profile_id, target_cap_color, [] { return !interrupted; });
+        node, fixture_profile_id, target_cap_color, [] { return !interrupted; },
+        {}, {}, {}, held_base);
     const auto status = result.status;
     const int exit_code = agxcore::tube_mission_exit_code(status);
     if (exit_code == EXIT_SUCCESS) {

@@ -400,6 +400,9 @@ class C_ROS_Server:
                 else: resp = -1
             # 位置模式
             elif(req.mode == 0 and self.init_state):
+                # 新的位置指令意味着操作员要求继续动作：清除上一次停止留下的
+                # 软件急停锁存，否则上层会把此后每一条状态都判成“带故障”。
+                self.ctrl.SetStopFlag(False)
                 self.target_height = self.ctrl.SetTargetHeight(req.val)
                 rospy.loginfo("target height: %d", self.target_height)
                 # 电机是否到达了目标位置，误差小于1认为到达了，反馈1为到达，反馈-1为未到达

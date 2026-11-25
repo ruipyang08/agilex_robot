@@ -1,0 +1,8 @@
+# 桌面架 -> 机载架：方案 A（两条 task 串联）。
+# 真实流程里前面还有 navigate；这条配方是给"车已就位、跳过导航"的台上验证用的，
+# 所以它不会通过准入——grasp 需要 navigate 写入的 held_station。
+schema_version: 2
+workflow_id: table_to_onboard
+tasks:
+  - {id: take_from_table, type: grasp_test_tube, fixture_profile: table_grid_3x3_v1, cap_color: green}
+  - {id: put_onboard,     type: place_test_tube, position: 1}

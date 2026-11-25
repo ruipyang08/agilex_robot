@@ -2065,6 +2065,14 @@ TubeMissionStatus TubeGraspMission::ValidateAndPrepare(
       joint_state_subscriber_.getNumPublishers() == 0 ||
       !setup_ready ||
       !setup_state) {
+    ROS_ERROR("setup check: detector=%d(service=%s) grip_pub_sub=%zu grip_state_pub=%zu joint_pub=%zu "
+              "setup_ready=%d setup_state=%d",
+              detector_client_.exists() ? 1 : 0,
+              detector_client_.getService().c_str(),
+              gripper_publisher_.getNumSubscribers(),
+              gripper_subscriber_.getNumPublishers(),
+              joint_state_subscriber_.getNumPublishers(),
+              setup_ready ? 1 : 0, setup_state ? 1 : 0);
     return TubeMissionStatus::kSetupUnavailable;
   }
   geometry_msgs::Pose initial_tcp;
@@ -2236,6 +2244,15 @@ TubeMissionStatus TubeGraspMission::FinishLift(
             operation.feedback_epoch_at_start,
             SteadySeconds(fault_receipt_time),
             SteadySeconds(operation.command_time))) {
+      ROS_ERROR("lift fault evidence belongs to this operation: fault_epoch=%lu "
+                "epoch_at_start=%lu fault_age=%.3f s since_cmd=%.3f s",
+                static_cast<unsigned long>(latest_fault_epoch),
+                static_cast<unsigned long>(operation.feedback_epoch_at_start),
+                SteadySeconds(fault_receipt_time) < 0 ? -1.0
+                    : std::chrono::duration<double>(
+                          std::chrono::steady_clock::now() - fault_receipt_time).count(),
+                std::chrono::duration<double>(
+                    std::chrono::steady_clock::now() - operation.command_time).count());
       return TubeMissionStatus::kLiftFeedbackUnavailable;
     }
     const auto wall_now = std::chrono::steady_clock::now();
@@ -2274,6 +2291,11 @@ TubeMissionStatus TubeGraspMission::FinishLift(
             feedback.stopFlag,
             feedback.fpsError);
     if (fresh && !fault_free) {
+      ROS_ERROR("lift feedback rejected as faulted: I=%d V=%d enc=%d bias=%d underV=%d "
+                "overload=%d extCtrl=%d stop=%d fps=%d",
+                feedback.overflowI, feedback.overflowV, feedback.encodeErr,
+                feedback.posBiasOver, feedback.underVol, feedback.overLoad,
+                feedback.externalCtrlMode, feedback.stopFlag, feedback.fpsError);
       return TubeMissionStatus::kLiftFeedbackUnavailable;
     }
     const bool usable =
@@ -2329,6 +2351,21 @@ TubeMissionStatus TubeGraspMission::FinishLift(
   }
   if (!received_post_command_feedback) {
     ROS_ERROR("tube lift produced no post-command feedback");
+  }
+  {
+    std::lock_guard<std::mutex> lock(lift_mutex_);
+    const double age = has_lift_state_
+        ? std::chrono::duration<double>(
+              std::chrono::steady_clock::now() - latest_lift_wall_time_).count()
+        : -1.0;
+    const double stamp_age = has_lift_state_ && !latest_lift_state_.header.stamp.isZero()
+        ? (ros::Time::now() - latest_lift_state_.header.stamp).toSec()
+        : -1.0;
+    ROS_ERROR("lift feedback unusable: has=%d age=%.3f s stamp_age=%.3f s max_age=%.3f "
+              "init=%d target=%d measured=%d reached=%d",
+              has_lift_state_ ? 1 : 0, age, stamp_age, config_->lift_state_max_age_sec,
+              latest_lift_state_.initState, latest_lift_state_.targetHeight,
+              latest_lift_state_.backHeight, latest_lift_state_.reachTargetPos);
   }
   return TubeMissionStatus::kLiftFeedbackUnavailable;
 }
